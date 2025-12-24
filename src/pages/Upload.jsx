@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { getToken } from "../utils/auth";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 export default function Upload() {
   const [orderLoading, setOrderLoading] = useState(false);
   const [settlementLoading, setSettlementLoading] = useState(false);
@@ -97,7 +99,7 @@ export default function Upload() {
                       accept=".csv"
                       onChange={(e) =>
                         upload(
-                          "http://localhost:8080/api/upload/orders",
+                          `${API_BASE}/api/upload/orders`,
                           e.target.files[0],
                           setOrderLoading,
                           setIsOrderUploaded
@@ -130,7 +132,7 @@ export default function Upload() {
                       accept=".csv"
                       onChange={(e) =>
                         upload(
-                          "http://localhost:8080/api/upload/settlement",
+                          `${API_BASE}/api/upload/settlement`,
                           e.target.files[0],
                           setSettlementLoading,
                           setIsSettlementUploaded

@@ -1,7 +1,8 @@
 import axios from "axios";
 import { getToken } from "../utils/auth";
 
-const API = "http://localhost:8080/profit/summary";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const API = `${API_BASE}/profit/summary`;
 
 const authHeader = () => ({
   headers: {

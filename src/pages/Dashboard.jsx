@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { getToken } from "../utils/auth";
 import axios from "axios";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 export default function Dashboard() {
   const [userName, setUserName] = useState("");
   const [stats, setStats] = useState({
@@ -21,7 +23,7 @@ export default function Dashboard() {
           setUserName(email.split("@")[0]);
         }
 
-        const response = await axios.get("http://localhost:8080/api/profit", {
+        const response = await axios.get(`${API_BASE}/api/profit`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

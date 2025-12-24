@@ -3,6 +3,8 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { getToken } from "../utils/auth";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 export default function SkuCost() {
   const [sku, setSku] = useState("");
   const [costPrice, setCostPrice] = useState("");
@@ -25,7 +27,7 @@ export default function SkuCost() {
 
     try {
       await axios.put(
-        "http://localhost:8080/api/sku-cost",
+        `${API_BASE}/api/sku-cost`,
         { sku, costPrice: parseFloat(costPrice) },
         { headers: { Authorization: `Bearer ${getToken()}` } }
       );

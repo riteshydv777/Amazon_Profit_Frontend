@@ -2,6 +2,8 @@ import { useState } from "react";
 import { login as loginAPI, setToken } from "../api/auth";
 import { useNavigate, Link } from "react-router-dom";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,9 +38,9 @@ export default function Login() {
       let errorMessage = "Login failed. Please try again.";
       
       if (err.code === "ECONNABORTED") {
-        errorMessage = "Request timeout. Is the backend running on http://localhost:8080?";
+        errorMessage = `Request timeout. Is the backend running on ${API_BASE}?`;
       } else if (err.code === "ECONNREFUSED" || err.message === "Network Error") {
-        errorMessage = "Cannot connect to backend. Make sure:\n1. Backend is running on http://localhost:8080\n2. CORS is enabled in your Spring Boot application";
+        errorMessage = `Cannot connect to backend. Make sure:\n1. Backend is running on ${API_BASE}\n2. CORS is enabled in your Spring Boot application`;
       } else if (err.response?.status === 401 || err.response?.status === 403) {
         errorMessage = "Invalid email or password";
       } else if (err.response?.status === 404) {

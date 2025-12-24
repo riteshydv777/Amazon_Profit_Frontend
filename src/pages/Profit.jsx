@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { getToken } from "../utils/auth";
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
 export default function Profit() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -10,7 +12,7 @@ export default function Profit() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get("http://localhost:8080/api/profit", {
+        const response = await axios.get(`${API_BASE}/api/profit`, {
           headers: { Authorization: `Bearer ${getToken()}` },
         });
         setData(response.data);
