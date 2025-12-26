@@ -1,127 +1,136 @@
-import { useState } from "react";
-import { login as loginAPI, setToken } from "../api/auth";
-import { useNavigate, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { login, setToken, checkHealth } from "../utils/auth";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const Login = () => {
+    const [formData, setFormData] = useState({ email: "", password: "" });
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [healthStatus, setHealthStatus] = useState(null);
+    const navigate = useNavigate();
 
-export default function Login() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
+    // Check backend health on component mount
+    useEffect(() => {
+        const testConnection = async () => {
+            try {
+                const health = await checkHealth();
+                setHealthStatus({ status: "connected", data: health });
+                console.log("✅ Backend is reachable:", health);
+            } catch (err) {
+                setHealthStatus({ status: "error", message: err.message });
+                console.error("❌ Backend connection failed:", err);
+            }
+        };
+        testConnection();
+    }, []);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError("");
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
-    if (!email || !password) {
-      setError("Please fill in all fields");
-      return;
-    }
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
 
-    setLoading(true);
+        try {
+            console.log("🔐 Attempting login...");
+            const response = await login(formData);
+            console.log("✅ Login successful:", response);
+            
+            setToken(response.token);
+            navigate("/dashboard");
+        } catch (err) {
+            console.error("❌ Login failed:", err);
+            setError(err.response?.data?.message || err.message || "Login failed. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    try {
-      const response = await loginAPI({ email, password });
-      console.log("Login response:", response);
-      if (response.token) {
-        setToken(response.token);
-        localStorage.setItem("userEmail", email);
-        navigate("/");
-      } else {
-        setError("Invalid response from server");
-      }
-    } catch (err) {
-      console.error("Login error:", err);
-      
-      let errorMessage = "Login failed. Please try again.";
-      
-      if (err.code === "ECONNABORTED") {
-        errorMessage = `Request timeout. Is the backend running on ${API_BASE}?`;
-      } else if (err.code === "ECONNREFUSED" || err.message === "Network Error") {
-        errorMessage = `Cannot connect to backend. Make sure:\n1. Backend is running on ${API_BASE}\n2. CORS is enabled in your Spring Boot application`;
-      } else if (err.response?.status === 401 || err.response?.status === 403) {
-        errorMessage = "Invalid email or password";
-      } else if (err.response?.status === 404) {
-        errorMessage = "Backend endpoint not found. Check your API configuration";
-      } else if (err.response?.status === 500) {
-        errorMessage = `Server error: ${err.response?.data?.message || "Please check backend logs"}`;
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-900">
+            <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-md">
+                <h2 className="text-3xl font-bold text-blue-400 mb-6 text-center">
+                    Welcome Back
+                </h2>
+                
+                {/* Backend Connection Status */}
+                <div className="mb-4 p-3 rounded text-sm">
+                    {healthStatus === null && (
+                        <div className="text-yellow-400">🔄 Checking backend connection...</div>
+                    )}
+                    {healthStatus?.status === "connected" && (
+                        <div className="text-green-400">✅ Backend connected</div>
+                    )}
+                    {healthStatus?.status === "error" && (
+                        <div className="text-red-400">
+                            ❌ Cannot connect to backend
+                            <div className="text-xs mt-1">{healthStatus.message}</div>
+                        </div>
+                    )}
+                </div>
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        <div className="bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-8">
-            <h2 className="text-3xl font-bold text-white text-center">Welcome Back</h2>
-            <p className="text-blue-100 text-center mt-2">Sign in to your account</p>
-          </div>
+                <p className="text-gray-400 text-center mb-6">
+                    Sign in to your account
+                </p>
 
-          <form onSubmit={handleLogin} className="p-8 space-y-6">
-            {error && (
-              <div className="bg-red-900/30 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm">
-                {error}
-              </div>
-            )}
+                {error && (
+                    <div className="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded mb-4">
+                        {error}
+                    </div>
+                )}
 
-            <div>
-              <label className="block text-slate-300 text-sm font-medium mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 outline-none transition"
-              />
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-gray-300 mb-2">Email Address</label>
+                        <input
+                            type="email"
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                            placeholder="you@example.com"
+                            required
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-gray-300 mb-2">Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            value={formData.password}
+                            onChange={handleChange}
+                            className="w-full px-4 py-2 bg-gray-700 text-white border border-gray-600 rounded focus:outline-none focus:border-blue-500"
+                            placeholder="••••••••"
+                            required
+                        />
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={loading || healthStatus?.status === "error"}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        {loading ? "Signing In..." : "Sign In"}
+                    </button>
+                </form>
+
+                <p className="text-gray-400 text-center mt-6">
+                    Don't have an account?{" "}
+                    <a href="/register" className="text-blue-400 hover:underline">
+                        Sign Up
+                    </a>
+                </p>
+
+                {/* Debug Info */}
+                <div className="mt-4 p-2 bg-gray-700 rounded text-xs text-gray-400">
+                    <div>API: {import.meta.env.VITE_API_BASE_URL || "http://localhost:8080"}</div>
+                </div>
             </div>
-
-            <div>
-              <label className="block text-slate-300 text-sm font-medium mb-2">
-                Password
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/50 outline-none transition"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200 transform hover:scale-105"
-            >
-              {loading ? "Signing in..." : "Sign In"}
-            </button>
-          </form>
-
-          <div className="px-8 pb-8 border-t border-slate-700 pt-6">
-            <p className="text-slate-400 text-center">
-              Don't have an account?{" "}
-              <Link to="/register" className="text-blue-400 hover:text-blue-300 font-semibold transition">
-                Create one
-              </Link>
-            </p>
-          </div>
         </div>
-      </div>
-    </div>
-  );
-}
+    );
+};
+
+export default Login;
