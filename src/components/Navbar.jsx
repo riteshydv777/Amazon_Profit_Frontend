@@ -34,15 +34,6 @@ export default function Navbar() {
             <Link to="/" className="text-slate-300 hover:text-white font-medium transition">
               Dashboard
             </Link>
-            <Link to="/upload" className="text-slate-300 hover:text-white font-medium transition">
-              Upload
-            </Link>
-            <Link to="/sku-cost" className="text-slate-300 hover:text-white font-medium transition">
-              SKU Cost
-            </Link>
-            <Link to="/profit" className="text-slate-300 hover:text-white font-medium transition">
-              Profit
-            </Link>
             <button
               onClick={handleLogout}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
@@ -59,24 +50,6 @@ export default function Navbar() {
               className="block text-slate-300 hover:text-white font-medium transition px-3 py-2 rounded-lg hover:bg-slate-700"
             >
               Dashboard
-            </Link>
-            <Link
-              to="/upload"
-              className="block text-slate-300 hover:text-white font-medium transition px-3 py-2 rounded-lg hover:bg-slate-700"
-            >
-              Upload
-            </Link>
-            <Link
-              to="/sku-cost"
-              className="block text-slate-300 hover:text-white font-medium transition px-3 py-2 rounded-lg hover:bg-slate-700"
-            >
-              SKU Cost
-            </Link>
-            <Link
-              to="/profit"
-              className="block text-slate-300 hover:text-white font-medium transition px-3 py-2 rounded-lg hover:bg-slate-700"
-            >
-              Profit
             </Link>
             <button
               onClick={handleLogout}

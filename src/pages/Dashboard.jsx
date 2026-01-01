@@ -1,48 +1,104 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { getToken } from "../utils/auth";
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
 export default function Dashboard() {
+  const [step, setStep] = useState(0); // 0: Start, 1: Upload Orders, 2: Upload Payments, 3: SKU Cost, 4: Report
   const [userName, setUserName] = useState("");
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    totalProfit: 0,
-    totalCost: 0,
-  });
-  const [loading, setLoading] = useState(true);
+  const [orderFile, setOrderFile] = useState(null);
+  const [paymentFile, setPaymentFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [skus, setSkus] = useState([]);
+  const [skuCosts, setSkuCosts] = useState({});
+  const [reportData, setReportData] = useState(null);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = getToken();
-        const email = localStorage.getItem("userEmail");
-        if (email) {
-          setUserName(email.split("@")[0]);
-        }
-
-        const response = await axios.get(`${API_BASE}/api/profit`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (response.data) {
-          setStats({
-            totalRevenue: response.data.totalRevenue || 0,
-            totalProfit: response.data.totalProfit || 0,
-            totalCost: response.data.totalCost || 0,
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch dashboard data:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    const email = localStorage.getItem("userEmail");
+    if (email) {
+      setUserName(email.split("@")[0]);
+    }
   }, []);
+
+  const handleOrderUpload = async () => {
+    if (!orderFile) return;
+    setLoading(true);
+    setMessage("");
+    try {
+      const formData = new FormData();
+      formData.append("file", orderFile);
+      await axios.post(`${API_BASE}/api/upload/orders`, formData, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setStep(2);
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to upload order sheet");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePaymentUpload = async () => {
+    if (!paymentFile) return;
+    setLoading(true);
+    setMessage("");
+    try {
+      const formData = new FormData();
+      formData.append("file", paymentFile);
+      await axios.post(`${API_BASE}/api/upload/settlement`, formData, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      
+      // Fetch SKUs after both uploads to initialize cost management
+      const response = await axios.get(`${API_BASE}/api/profit`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      
+      if (response.data && response.data.skuProfits) {
+        const uniqueSkus = response.data.skuProfits.map(s => s.sku);
+        setSkus(uniqueSkus);
+        const initialCosts = {};
+        response.data.skuProfits.forEach(s => {
+          initialCosts[s.sku] = s.cost || "";
+        });
+        setSkuCosts(initialCosts);
+      }
+      setStep(3);
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to upload payment sheet");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSkuCostSubmit = async () => {
+    setLoading(true);
+    setMessage("");
+    try {
+      // Save each SKU cost
+      await Promise.all(
+        Object.entries(skuCosts).map(([sku, costPrice]) => 
+          axios.put(`${API_BASE}/api/sku-cost`, 
+            { sku, costPrice: parseFloat(costPrice) || 0 },
+            { headers: { Authorization: `Bearer ${getToken()}` } }
+          )
+        )
+      );
+      
+      // Generate Report
+      const response = await axios.get(`${API_BASE}/api/profit`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setReportData(response.data);
+      setStep(4);
+    } catch (err) {
+      setMessage(err.response?.data?.message || "Failed to save SKU costs");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-IN", {
@@ -52,138 +108,351 @@ export default function Dashboard() {
     }).format(value || 0);
   };
 
-  const menuItems = [
-    {
-      icon: "📊",
-      title: "View Profit",
-      description: "Check your profit analysis",
-      link: "/profit",
-      color: "from-blue-600 to-blue-700",
-    },
-    {
-      icon: "📤",
-      title: "Upload Files",
-      description: "Upload CSV files",
-      link: "/upload",
-      color: "from-green-600 to-green-700",
-    },
-    {
-      icon: "💰",
-      title: "SKU Cost",
-      description: "Manage SKU costs",
-      link: "/sku-cost",
-      color: "from-purple-600 to-purple-700",
-    },
-  ];
+  const downloadReport = () => {
+    if (!reportData || !reportData.skuProfits) return;
+    const headers = ["SKU", "Revenue", "Cost", "Profit", "Margin %"];
+    const rows = reportData.skuProfits.map((sku) => {
+      const profit = sku.profit || 0;
+      const revenue = sku.revenue || 0;
+      const margin = revenue ? ((profit / revenue) * 100).toFixed(2) : 0;
+      return [
+        sku.sku,
+        revenue,
+        sku.cost || 0,
+        profit,
+        margin
+      ];
+    });
+    
+    const csvContent = [
+      headers.join(","),
+      ...rows.map(r => r.join(","))
+    ].join("\n");
+    
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `amazon_profit_report_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-3">
-            Welcome back, <span className="bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent capitalize">{userName || "User"}</span>!
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-slate-900 mb-2">
+            Welcome, <span className="text-blue-600 capitalize">{userName || "User"}</span>
           </h1>
-          <p className="text-xl text-slate-600">Here's your business overview at a glance</p>
+          <p className="text-slate-600">Analyze your Amazon profit in few simple steps</p>
         </div>
 
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-slate-600">Loading your dashboard...</p>
+        {message && (
+          <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6 flex justify-between items-center">
+            <span>{message}</span>
+            <button onClick={() => setMessage("")} className="text-red-500 font-bold ml-4">✕</button>
           </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-              <div className="bg-white rounded-2xl shadow-lg p-8 border-l-4 border-blue-500 hover:shadow-xl transition">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-600 text-sm font-medium">Total Revenue</p>
-                    <p className="text-3xl font-bold text-blue-600 mt-2">
-                      {formatCurrency(stats.totalRevenue)}
-                    </p>
-                  </div>
-                  <div className="w-14 h-14 bg-blue-100 rounded-lg flex items-center justify-center text-2xl">
-                    💵
-                  </div>
-                </div>
-              </div>
+        )}
 
-              <div className="bg-white rounded-2xl shadow-lg p-8 border-l-4 border-orange-500 hover:shadow-xl transition">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-600 text-sm font-medium">Total Cost</p>
-                    <p className="text-3xl font-bold text-orange-600 mt-2">
-                      {formatCurrency(stats.totalCost)}
-                    </p>
-                  </div>
-                  <div className="w-14 h-14 bg-orange-100 rounded-lg flex items-center justify-center text-2xl">
-                    📉
-                  </div>
-                </div>
-              </div>
-
-              <div className={`bg-white rounded-2xl shadow-lg p-8 border-l-4 ${stats.totalProfit > 0 ? 'border-green-500' : 'border-red-500'} hover:shadow-xl transition`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-slate-600 text-sm font-medium">Total Profit</p>
-                    <p className={`text-3xl font-bold mt-2 ${stats.totalProfit > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {formatCurrency(stats.totalProfit)}
-                    </p>
-                  </div>
-                  <div className={`w-14 h-14 ${stats.totalProfit > 0 ? 'bg-green-100' : 'bg-red-100'} rounded-lg flex items-center justify-center text-2xl`}>
-                    {stats.totalProfit > 0 ? "📈" : "📊"}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-lg p-8 mb-12">
-              <h2 className="text-2xl font-bold text-slate-900 mb-8">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {menuItems.map((item, index) => (
-                  <Link
-                    key={index}
-                    to={item.link}
-                    className={`bg-gradient-to-br ${item.color} rounded-xl p-6 text-white hover:shadow-lg transform hover:scale-105 transition duration-300`}
-                  >
-                    <div className="text-4xl mb-4">{item.icon}</div>
-                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
-                    <p className="opacity-90 text-sm">{item.description}</p>
-                    <div className="mt-4 inline-flex items-center text-sm font-medium">
-                      Go to page →
+        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+          {/* Progress Bar */}
+          {step > 0 && step < 4 && (
+            <div className="bg-slate-100 px-8 py-6 border-b">
+              <div className="flex justify-between max-w-3xl mx-auto">
+                {[1, 2, 3].map((s) => (
+                  <div key={s} className="flex items-center flex-1 last:flex-none">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold transition-colors ${
+                      step === s ? "bg-blue-600 text-white shadow-lg" : step > s ? "bg-green-500 text-white" : "bg-white border-2 border-slate-300 text-slate-400"
+                    }`}>
+                      {step > s ? "✓" : s}
                     </div>
-                  </Link>
+                    <span className={`ml-3 text-sm font-bold ${step === s ? "text-blue-600" : step > s ? "text-green-600" : "text-slate-400"}`}>
+                      {s === 1 ? "Order Sheet" : s === 2 ? "Payment Sheet" : "SKU Costs"}
+                    </span>
+                    {s < 3 && <div className={`flex-1 h-1 mx-4 rounded ${step > s ? "bg-green-500" : "bg-slate-200"}`} />}
+                  </div>
                 ))}
               </div>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
-                  <span className="text-xl mr-2">💡</span>
-                  Quick Tips
-                </h3>
-                <ul className="text-blue-800 space-y-2 text-sm">
-                  <li>• Upload your CSV files to get started</li>
-                  <li>• Set cost prices for accurate profit calculations</li>
-                  <li>• Check profit analytics regularly</li>
-                </ul>
+          <div className="p-8 md:p-12">
+            {step === 0 && (
+              <div className="text-center py-12">
+                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center text-5xl mx-auto mb-8 shadow-inner">
+                  📊
+                </div>
+                <h2 className="text-3xl font-bold text-slate-900 mb-4">Start New Analysis</h2>
+                <p className="text-slate-600 mb-10 max-w-md mx-auto text-lg">
+                  Upload your order and payment sheets to calculate your profit and manage SKU costs accurately.
+                </p>
+                <button
+                  onClick={() => setStep(1)}
+                  className="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition transform hover:scale-105 shadow-xl"
+                >
+                  Get Started Now
+                </button>
               </div>
+            )}
 
-              <div className="bg-green-50 border border-green-200 rounded-xl p-6">
-                <h3 className="font-semibold text-green-900 mb-3 flex items-center">
-                  <span className="text-xl mr-2">✨</span>
-                  Latest Features
-                </h3>
-                <ul className="text-green-800 space-y-2 text-sm">
-                  <li>• SKU-wise profit analysis</li>
-                  <li>• Real-time profit calculations</li>
-                  <li>• Secure token-based authentication</li>
-                </ul>
+            {step === 1 && (
+              <div className="max-w-2xl mx-auto">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900">Step 1: Upload Order Sheet</h2>
+                  <p className="text-slate-500">Please provide your Amazon Order CSV file</p>
+                </div>
+                
+                <div className="border-3 border-dashed border-slate-200 rounded-2xl p-12 text-center hover:border-blue-400 transition-colors bg-slate-50">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setOrderFile(e.target.files[0])}
+                    className="hidden"
+                    id="order-upload"
+                  />
+                  <label htmlFor="order-upload" className="cursor-pointer group">
+                    <div className="text-6xl mb-6 group-hover:scale-110 transition-transform">📄</div>
+                    <p className="text-slate-700 font-semibold mb-2">
+                      {orderFile ? orderFile.name : "Click to select Order CSV"}
+                    </p>
+                    <p className="text-slate-400 text-sm mb-6">Max file size 10MB</p>
+                    <span className="bg-white border-2 border-blue-600 text-blue-600 px-6 py-2 rounded-lg text-sm font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                      {orderFile ? "Change File" : "Browse Files"}
+                    </span>
+                  </label>
+                </div>
+                
+                <div className="mt-10 flex justify-between items-center">
+                  <button onClick={() => setStep(0)} className="text-slate-500 font-bold hover:text-slate-700">Cancel</button>
+                  <button
+                    onClick={handleOrderUpload}
+                    disabled={!orderFile || loading}
+                    className="bg-blue-600 text-white px-8 py-4 rounded-xl font-bold disabled:opacity-50 shadow-lg hover:bg-blue-700 transition"
+                  >
+                    {loading ? "Uploading..." : "Next: Payment Sheet →"}
+                  </button>
+                </div>
               </div>
-            </div>
-          </>
-        )}
+            )}
+
+            {step === 2 && (
+              <div className="max-w-2xl mx-auto">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-bold text-slate-900">Step 2: Upload Payment Sheet</h2>
+                  <p className="text-slate-500">Provide your Amazon Payment/Settlement CSV file</p>
+                </div>
+
+                <div className="border-3 border-dashed border-slate-200 rounded-2xl p-12 text-center hover:border-green-400 transition-colors bg-slate-50">
+                  <input
+                    type="file"
+                    accept=".csv"
+                    onChange={(e) => setPaymentFile(e.target.files[0])}
+                    className="hidden"
+                    id="payment-upload"
+                  />
+                  <label htmlFor="payment-upload" className="cursor-pointer group">
+                    <div className="text-6xl mb-6 group-hover:scale-110 transition-transform">💰</div>
+                    <p className="text-slate-700 font-semibold mb-2">
+                      {paymentFile ? paymentFile.name : "Click to select Payment CSV"}
+                    </p>
+                    <p className="text-slate-400 text-sm mb-6">Max file size 10MB</p>
+                    <span className="bg-white border-2 border-green-600 text-green-600 px-6 py-2 rounded-lg text-sm font-bold group-hover:bg-green-600 group-hover:text-white transition-colors">
+                      {paymentFile ? "Change File" : "Browse Files"}
+                    </span>
+                  </label>
+                </div>
+
+                <div className="mt-10 flex justify-between items-center">
+                  <button onClick={() => setStep(1)} className="text-slate-500 font-bold hover:text-slate-700">← Back</button>
+                  <button
+                    onClick={handlePaymentUpload}
+                    disabled={!paymentFile || loading}
+                    className="bg-green-600 text-white px-8 py-4 rounded-xl font-bold disabled:opacity-50 shadow-lg hover:bg-green-700 transition"
+                  >
+                    {loading ? "Processing..." : "Next: SKU Costs →"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="max-w-4xl mx-auto">
+                <div className="mb-8 flex justify-between items-end">
+                  <div>
+                    <h2 className="text-2xl font-bold text-slate-900">Step 3: SKU Cost Management</h2>
+                    <p className="text-slate-500">Enter cost price for each unique SKU found in your sheets</p>
+                  </div>
+                  <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-bold">
+                    {skus.length} SKUs Found
+                  </span>
+                </div>
+
+                <div className="overflow-hidden border border-slate-200 rounded-2xl shadow-sm mb-10">
+                  <div className="max-h-[400px] overflow-y-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-50 sticky top-0 z-10">
+                        <tr>
+                          <th className="px-8 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wider">SKU Name</th>
+                          <th className="px-8 py-4 text-left text-sm font-bold text-slate-700 uppercase tracking-wider">Cost Price (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {skus.length > 0 ? skus.map((sku) => (
+                          <tr key={sku} className="hover:bg-blue-50/30 transition-colors">
+                            <td className="px-8 py-5 text-sm text-slate-900 font-medium">{sku}</td>
+                            <td className="px-8 py-5">
+                              <div className="relative w-40">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">₹</span>
+                                <input
+                                  type="number"
+                                  value={skuCosts[sku] || ""}
+                                  onChange={(e) => setSkuCosts({...skuCosts, [sku]: e.target.value})}
+                                  placeholder="0.00"
+                                  className="w-full pl-8 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                />
+                              </div>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr>
+                            <td colSpan="2" className="px-8 py-12 text-center text-slate-500">
+                              No SKUs found. Please ensure your files have correct data.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <button onClick={() => setStep(2)} className="text-slate-500 font-bold hover:text-slate-700">← Back</button>
+                  <button
+                    onClick={handleSkuCostSubmit}
+                    disabled={loading || skus.length === 0}
+                    className="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg disabled:opacity-50"
+                  >
+                    {loading ? "Saving Costs..." : "Generate Final Report ✨"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 4 && reportData && (
+              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-8">
+                  <div>
+                    <h2 className="text-4xl font-extrabold text-slate-900">Profit Analysis Report</h2>
+                    <p className="text-slate-500 mt-1">Generated on {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
+                  </div>
+                  <button
+                    onClick={downloadReport}
+                    className="flex items-center space-x-3 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg transform hover:scale-105 active:scale-95"
+                  >
+                    <span className="text-xl">📥</span>
+                    <span>Download CSV Report</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-2 h-full bg-blue-500"></div>
+                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">Total Revenue</p>
+                    <p className="text-4xl font-black text-slate-900">{formatCurrency(reportData.totalRevenue)}</p>
+                    <div className="mt-4 text-blue-600 text-sm font-bold flex items-center">
+                      <span>Total Gross Sales</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group">
+                    <div className="absolute top-0 left-0 w-2 h-full bg-orange-500"></div>
+                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">Total Cost</p>
+                    <p className="text-4xl font-black text-slate-900">{formatCurrency(reportData.totalCost)}</p>
+                    <div className="mt-4 text-orange-600 text-sm font-bold flex items-center">
+                      <span>Inventory & Logistics</span>
+                    </div>
+                  </div>
+
+                  <div className={`bg-white p-8 rounded-3xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group`}>
+                    <div className={`absolute top-0 left-0 w-2 h-full ${reportData.totalProfit >= 0 ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                    <p className="text-slate-500 text-sm font-bold uppercase tracking-wider mb-2">Net Profit</p>
+                    <p className={`text-4xl font-black ${reportData.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatCurrency(reportData.totalProfit)}
+                    </p>
+                    <div className={`mt-4 ${reportData.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'} text-sm font-bold flex items-center`}>
+                      <span>{reportData.totalProfit >= 0 ? "Profit Margin: " : "Loss Margin: "} 
+                        {reportData.totalRevenue ? ((reportData.totalProfit / reportData.totalRevenue) * 100).toFixed(2) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+                  <div className="px-8 py-6 bg-slate-50 border-b flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-slate-900">SKU-wise Performance Breakdown</h3>
+                    <div className="text-sm text-slate-500 font-medium">
+                      Showing {reportData.skuProfits?.length || 0} Products
+                    </div>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="px-8 py-4 text-left text-xs font-bold text-slate-400 uppercase tracking-widest">Product SKU</th>
+                          <th className="px-8 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Revenue</th>
+                          <th className="px-8 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Cost</th>
+                          <th className="px-8 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Net Profit</th>
+                          <th className="px-8 py-4 text-right text-xs font-bold text-slate-400 uppercase tracking-widest">Margin %</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {reportData.skuProfits?.map((sku, index) => {
+                          const profit = sku.profit || 0;
+                          const revenue = sku.revenue || 0;
+                          const margin = revenue ? ((profit / revenue) * 100).toFixed(2) : 0;
+                          return (
+                            <tr key={index} className="hover:bg-slate-50/80 transition-colors group">
+                              <td className="px-8 py-5 text-sm font-bold text-slate-900">{sku.sku}</td>
+                              <td className="px-8 py-5 text-right text-sm font-medium text-blue-600">{formatCurrency(revenue)}</td>
+                              <td className="px-8 py-5 text-right text-sm font-medium text-slate-500">{formatCurrency(sku.cost)}</td>
+                              <td className={`px-8 py-5 text-right text-sm font-black ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatCurrency(profit)}
+                              </td>
+                              <td className="px-8 py-5 text-right">
+                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${profit >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                  {margin}%
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                <div className="flex justify-center pt-10 pb-6">
+                  <button
+                    onClick={() => {
+                      if(window.confirm("Are you sure you want to start over? Current analysis will be cleared from view.")) {
+                        setStep(0);
+                        setOrderFile(null);
+                        setPaymentFile(null);
+                        setReportData(null);
+                      }
+                    }}
+                    className="flex items-center space-x-2 text-slate-400 font-bold hover:text-blue-600 transition-colors group"
+                  >
+                    <span className="group-hover:-translate-x-1 transition-transform">↺</span>
+                    <span>Start New Analysis Session</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

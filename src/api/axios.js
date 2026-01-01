@@ -1,21 +1,48 @@
 import axios from "axios";
-import { getToken } from "../utils/auth";
+import { getToken } from "./auth";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8080",
+    baseURL: API_BASE_URL,
+    timeout: 10000,
 });
 
-api.interceptors.request.use((config) => {
-    // 🔥 DO NOT attach token for auth endpoints
-    if (!config.url.includes("/api/auth")) {
-        const token = getToken();
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+    (config) => {
+        console.log("🚀 API Request:", config.method.toUpperCase(), config.url);
+        
+        // Skip token for auth endpoints
+        if (!config.url?.includes("/api/auth")) {
+            const token = getToken();
+            if (token) {
+                config.headers = config.headers || {};
+                config.headers.Authorization = `Bearer ${token}`;
+                console.log("🔑 Token attached");
+            }
         }
+        return config;
+    },
+    (error) => {
+        console.error("❌ API Request Error:", error);
+        return Promise.reject(error);
     }
-    return config;
-});
+);
 
-return config;
+api.interceptors.response.use(
+    (response) => {
+        console.log("✅ API Response:", response.status);
+        return response;
+    },
+    (error) => {
+        console.error("❌ API Response Error:", {
+            status: error.response?.status,
+            data: error.response?.data,
+            message: error.message,
+            url: error.config?.url,
+        });
+        return Promise.reject(error);
+    }
+);
 
 export default api;
