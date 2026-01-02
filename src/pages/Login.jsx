@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { login, checkHealth } from "../api/auth";
-import { setToken } from "../utils/auth";
+import { login, setToken, checkHealth } from "../utils/auth";
 
 const Login = () => {
     const [formData, setFormData] = useState({ email: "", password: "" });
