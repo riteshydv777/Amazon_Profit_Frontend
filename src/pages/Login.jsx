@@ -39,6 +39,7 @@ const Login = () => {
             console.log("✅ Login successful:", response);
             
             setToken(response.token);
+            localStorage.setItem("userEmail", formData.email);
             navigate("/dashboard");
         } catch (err) {
             console.error("❌ Login failed:", err);

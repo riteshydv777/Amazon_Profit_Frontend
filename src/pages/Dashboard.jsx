@@ -150,6 +150,8 @@ export default function Dashboard() {
           </h1>
           <p className="text-slate-600">Analyze your Amazon profit in few simple steps</p>
         </div>
+          <p className="text-slate-600">Analyze your Amazon profit in few simple steps</p>
+        </div>
 
         {message && (
           <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6 flex justify-between items-center">
@@ -481,7 +483,7 @@ export default function Dashboard() {
                     }}
                     className="flex items-center space-x-2 text-slate-400 font-bold hover:text-blue-600 transition-colors group"
                   >
-                    <span className="group-hover:-translate-x-1 transition-transform">↺</span>
+                    <span className="group-hover:-translate-x-1 transition-transform">⟲</span>
                     <span>Start New Analysis Session</span>
                   </button>
                 </div>
@@ -490,6 +492,6 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-    </div>
+    
   );
 }
