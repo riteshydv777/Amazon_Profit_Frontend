@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getToken } from "../utils/auth";
 import axios from "axios";
+import DetailedProfitReport from "../components/DetailedProfitReport";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
@@ -89,11 +90,12 @@ export default function Dashboard() {
         )
       );
       
-      // Generate Report
-      const response = await axios.get(`${API_BASE}/api/profit`, {
+      // ✅ NEW: Fetch detailed report
+      const response = await axios.get(`${API_BASE}/api/profit/detailed`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
-      setReportData(response.data);
+      
+      setReportData(response.data.data); // Extract data from ApiResponse wrapper
       setStep(4);
     } catch (err) {
       setMessage(err.response?.data?.message || "Failed to save SKU costs");
@@ -449,170 +451,21 @@ export default function Dashboard() {
             )}
 
             {step === 4 && reportData && (
-              <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-8">
-                  <div>
-                    <h2 className="text-4xl font-extrabold text-slate-900">Profit Analysis Report</h2>
-                    <p className="text-slate-500 mt-1">Generated on {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
-                  </div>
-                  <button
-                    onClick={downloadReport}
-                    className="flex items-center space-x-3 bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-emerald-700 transition shadow-lg transform hover:scale-105 active:scale-95"
-                  >
-                    <span className="text-xl">📥</span>
-                    <span>Download CSV Report</span>
-                  </button>
-                </div>
-
-                {/* Profit Breakdown Table */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-8 py-6 bg-gradient-to-r from-slate-50 to-slate-100 border-b">
-                    <h3 className="text-lg font-bold text-slate-900">Profit Breakdown</h3>
-                  </div>
-                  <div className="divide-y divide-slate-100">
-                    <div className="px-8 py-4 flex justify-between items-center hover:bg-slate-50">
-                      <span className="text-slate-700 font-semibold">Sales</span>
-                      <span className="text-slate-900 font-bold text-lg">{formatCurrency(reportData.totalRevenue)}</span>
-                    </div>
-                    <div className="px-8 py-4 flex justify-between items-center hover:bg-slate-50">
-                      <span className="text-slate-700 font-semibold">Shipping & Fees</span>
-                      <span className="text-slate-600 text-sm">{formatCurrency(reportData.totalRevenue * 0.3)}</span>
-                    </div>
-                    <div className="px-8 py-4 flex justify-between items-center hover:bg-slate-50 bg-blue-50">
-                      <span className="text-slate-700 font-semibold">Net Settlement</span>
-                      <span className="text-blue-600 font-bold">{formatCurrency(reportData.totalRevenue * 0.7)}</span>
-                    </div>
-                    <div className="px-8 py-4 flex justify-between items-center hover:bg-slate-50">
-                      <span className="text-slate-700 font-semibold">Other Charges</span>
-                      <span className="text-slate-600">0.00</span>
-                    </div>
-                    <div className="px-8 py-4 flex justify-between items-center hover:bg-slate-50 bg-orange-50">
-                      <span className="text-slate-700 font-semibold font-bold">Purchase Cost</span>
-                      <span className="text-orange-600 font-bold">{formatCurrency(reportData.totalCost)}</span>
-                    </div>
-                    <div className="px-8 py-4 flex justify-between items-center bg-green-50 border-t-2 border-green-200">
-                      <span className="text-slate-900 font-bold text-lg">Profit</span>
-                      <span className={`font-black text-2xl ${reportData.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(reportData.totalProfit)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Key Metrics Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-blue-500 rounded-l-2xl"></div>
-                    <p className="text-slate-500 text-sm font-bold uppercase mb-2">Profit Margin</p>
-                    <p className="text-3xl font-black text-blue-600">
-                      {reportData.totalRevenue ? ((reportData.totalProfit / reportData.totalRevenue) * 100).toFixed(2) : 0}%
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                    <p className="text-slate-500 text-sm font-bold uppercase mb-2">Total Orders</p>
-                    <p className="text-3xl font-black text-purple-600">{orderSummary?.totalOrders || 0}</p>
-                  </div>
-
-                  <div className="bg-white p-8 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
-                    <p className="text-slate-500 text-sm font-bold uppercase mb-2">Unique SKUs</p>
-                    <p className="text-3xl font-black text-indigo-600">{skus.length}</p>
-                  </div>
-                </div>
-
-                {/* Fulfillment Details */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-8 py-6 bg-gradient-to-r from-slate-50 to-slate-100 border-b">
-                    <h3 className="text-lg font-bold text-slate-900">Fulfillment Details</h3>
-                  </div>
-                  <div className="divide-y divide-slate-100">
-                    <div className="px-8 py-4 flex items-center justify-between hover:bg-slate-50">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">📦</span>
-                        <span className="text-slate-700 font-semibold">Easy Ship Order Count</span>
-                      </div>
-                      <span className="text-slate-900 font-bold text-lg">{Math.floor(orderSummary?.totalOrders * 0.6) || 0}</span>
-                    </div>
-                    <div className="px-8 py-4 flex items-center justify-between hover:bg-slate-50">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">🏭</span>
-                        <span className="text-slate-700 font-semibold">FBA Order Count</span>
-                      </div>
-                      <span className="text-slate-900 font-bold text-lg">{Math.floor(orderSummary?.totalOrders * 0.3) || 0}</span>
-                    </div>
-                    <div className="px-8 py-4 flex items-center justify-between hover:bg-slate-50">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-2xl">🚚</span>
-                        <span className="text-slate-700 font-semibold">Self Ship Order Count</span>
-                      </div>
-                      <span className="text-slate-900 font-bold text-lg">{Math.floor(orderSummary?.totalOrders * 0.1) || 0}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* SKU Performance Table */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="px-8 py-6 bg-gradient-to-r from-slate-50 to-slate-100 border-b flex justify-between items-center">
-                    <h3 className="text-lg font-bold text-slate-900">SKU-wise Performance Breakdown</h3>
-                    <div className="text-sm text-slate-500 font-medium">
-                      {reportData.skuProfits?.length || 0} Products
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-slate-50 border-b">
-                        <tr>
-                          <th className="px-8 py-4 text-left text-xs font-bold text-slate-700 uppercase">Product SKU</th>
-                          <th className="px-8 py-4 text-right text-xs font-bold text-slate-700 uppercase">Revenue</th>
-                          <th className="px-8 py-4 text-right text-xs font-bold text-slate-700 uppercase">Cost</th>
-                          <th className="px-8 py-4 text-right text-xs font-bold text-slate-700 uppercase">Profit</th>
-                          <th className="px-8 py-4 text-right text-xs font-bold text-slate-700 uppercase">Margin %</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {reportData.skuProfits?.map((sku, index) => {
-                          const profit = sku.profit || 0;
-                          const revenue = sku.revenue || 0;
-                          const margin = revenue ? ((profit / revenue) * 100).toFixed(2) : 0;
-                          return (
-                            <tr key={index} className="hover:bg-slate-50 transition-colors">
-                              <td className="px-8 py-5 text-sm font-bold text-slate-900">{sku.sku}</td>
-                              <td className="px-8 py-5 text-right text-sm font-medium text-blue-600">{formatCurrency(revenue)}</td>
-                              <td className="px-8 py-5 text-right text-sm font-medium text-slate-600">{formatCurrency(sku.cost)}</td>
-                              <td className={`px-8 py-5 text-right text-sm font-black ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {formatCurrency(profit)}
-                              </td>
-                              <td className="px-8 py-5 text-right">
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold ${profit >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                  {margin}%
-                                </span>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                <div className="flex justify-center pt-10 pb-6">
-                  <button
-                    onClick={() => {
-                      if(window.confirm("Are you sure you want to start over? Current analysis will be cleared from view.")) {
-                        setStep(0);
-                        setOrderFile(null);
-                        setOrderSummary(null);
-                        setPaymentFile(null);
-                        setReportData(null);
-                      }
-                    }}
-                    className="flex items-center space-x-2 text-slate-400 font-bold hover:text-blue-600 transition-colors group"
-                  >
-                    <span className="group-hover:-translate-x-1 transition-transform">↻</span>
-                    <span>Start New Analysis Session</span>
-                  </button>
-                </div>
-              </div>
+              <DetailedProfitReport
+                reportData={reportData}
+                orderSummary={orderSummary}
+                skus={skus}
+                downloadReport={downloadReport}
+                onStartOver={() => {
+                  if(window.confirm("Are you sure you want to start over? Current analysis will be cleared from view.")) {
+                    setStep(0);
+                    setOrderFile(null);
+                    setOrderSummary(null);
+                    setPaymentFile(null);
+                    setReportData(null);
+                  }
+                }}
+              />
             )}
             </div>
           </div>
