@@ -5,15 +5,13 @@ export default defineConfig({
   plugins: [react()],
 
   server: {
+    host: true,
     port: 5173,
-    host: true, // OK
   },
 
   preview: {
-    port: 8080,
     host: true,
-    allowedHosts: [
-      'amazonprofitfrontend-production.up.railway.app'
-    ]
+    port: 8080,
+    allowedHosts: 'all' // ✅ TEMPORARY BUT GUARANTEED FIX
   }
 })
