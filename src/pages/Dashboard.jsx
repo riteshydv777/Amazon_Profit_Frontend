@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { getToken } from "../utils/auth";
 import axios from "axios";
-import DetailedProfitReport from "../components/DetailedProfitReport";
+import DetailedProfitReport from "./DetailedProfitReport";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
 
