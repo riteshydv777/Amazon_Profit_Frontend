@@ -141,18 +141,81 @@ export default function Dashboard() {
     document.body.removeChild(link);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 mb-2">
-            Welcome, <span className="text-blue-600 capitalize">{userName || "User"}</span>
-          </h1>
-          <p className="text-slate-600">Analyze your Amazon profit in few simple steps</p>
-        </div>
-          <p className="text-slate-600">Analyze your Amazon profit in few simple steps</p>
-        </div>
+  const tools = [
+    {
+      id: 1,
+      name: "Profit Calculator",
+      description: "Calculate your Amazon profit with detailed analysis",
+      icon: "📊",
+      color: "bg-gradient-to-br from-orange-400 to-orange-600",
+      action: () => setStep(1)
+    },
+    {
+      id: 2,
+      name: "SKU Analysis",
+      description: "Analyze profits by individual SKU",
+      icon: "📦",
+      color: "bg-gradient-to-br from-blue-400 to-blue-600",
+      action: () => alert("Feature coming soon!")
+    },
+    {
+      id: 3,
+      name: "Revenue Report",
+      description: "Detailed revenue breakdown and trends",
+      icon: "📈",
+      color: "bg-gradient-to-br from-green-400 to-green-600",
+      action: () => alert("Feature coming soon!")
+    },
+    {
+      id: 4,
+      name: "Expense Tracker",
+      description: "Track all your selling expenses",
+      icon: "💰",
+      color: "bg-gradient-to-br from-purple-400 to-purple-600",
+      action: () => alert("Feature coming soon!")
+    },
+    {
+      id: 5,
+      name: "Tax Calculator",
+      description: "Calculate taxes on your profits",
+      icon: "🧮",
+      color: "bg-gradient-to-br from-pink-400 to-pink-600",
+      action: () => alert("Feature coming soon!")
+    },
+    {
+      id: 6,
+      name: "Inventory Manager",
+      description: "Manage your product inventory",
+      icon: "📦",
+      color: "bg-gradient-to-br from-indigo-400 to-indigo-600",
+      action: () => alert("Feature coming soon!")
+    }
+  ];
 
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {/* Header with Username */}
+      <div className="bg-white border-b border-slate-200 sticky top-16 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+                Welcome, <span className="text-blue-600 capitalize">{userName || "User"}</span>
+              </h1>
+              <p className="text-slate-500">Choose a tool to analyze your Amazon business</p>
+            </div>
+            {reportData && (
+              <div className="text-right bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                <p className="text-xs text-green-600 font-semibold">Latest Profit</p>
+                <p className="text-2xl font-bold text-green-700">{formatCurrency(reportData.totalProfit)}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {message && (
           <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-6 flex justify-between items-center">
             <span>{message}</span>
@@ -160,9 +223,37 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-          {/* Progress Bar */}
-          {step > 0 && step < 4 && (
+        {/* Tools Grid */}
+        {step === 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {tools.map((tool) => (
+              <div
+                key={tool.id}
+                onClick={tool.action}
+                className="cursor-pointer group"
+              >
+                <div className={`${tool.color} rounded-2xl p-8 text-white shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 h-full flex flex-col justify-between`}>
+                  <div>
+                    <div className="text-5xl mb-4 group-hover:scale-110 transition-transform duration-300">
+                      {tool.icon}
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">{tool.name}</h3>
+                    <p className="text-white/80 text-sm">{tool.description}</p>
+                  </div>
+                  <div className="mt-6 flex items-center text-white font-semibold group-hover:translate-x-2 transition-transform duration-300">
+                    <span>Get Started</span>
+                    <span className="ml-2">→</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* File Upload Section */}
+        {step > 0 && step < 4 && (
+          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            {/* Progress Bar */}
             <div className="bg-slate-100 px-8 py-6 border-b">
               <div className="flex justify-between max-w-3xl mx-auto">
                 {[1, 2, 3].map((s) => (
@@ -180,9 +271,8 @@ export default function Dashboard() {
                 ))}
               </div>
             </div>
-          )}
 
-          <div className="p-8 md:p-12">
+            <div className="p-8 md:p-12">
             {orderSummary && step > 1 && step < 4 && (
               <div className="mb-10 bg-blue-50 border border-blue-100 rounded-2xl p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="flex items-center justify-between mb-4">
@@ -215,25 +305,6 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
-
-            {step === 0 && (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center text-5xl mx-auto mb-8 shadow-inner">
-                  📊
-                </div>
-                <h2 className="text-3xl font-bold text-slate-900 mb-4">Start New Analysis</h2>
-                <p className="text-slate-600 mb-10 max-w-md mx-auto text-lg">
-                  Upload your order and payment sheets to calculate your profit and manage SKU costs accurately.
-                </p>
-                <button
-                  onClick={() => setStep(1)}
-                  className="bg-blue-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-blue-700 transition transform hover:scale-105 shadow-xl"
-                >
-                  Get Started Now
-                </button>
-              </div>
-            )}
-
             {step === 1 && (
               <div className="max-w-2xl mx-auto">
                 <div className="mb-8">
@@ -489,9 +560,10 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
-    
+    </div>
   );
 }
