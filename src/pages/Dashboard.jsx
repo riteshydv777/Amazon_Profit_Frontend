@@ -97,37 +97,40 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       console.log("✅ Report fetched:", response.data);
-      // Extract data from ApiResponse wrapper
+      
+      // Backend returns data directly (no wrapper) OR wrapped in ApiResponse
       const backendData = response.data.data || response.data;
       console.log("📋 Backend data:", backendData);
       
-      // Transform backend DTO to match frontend expectations
+      // Map backend data to component field names
       const transformedData = {
-        totalRevenue: backendData.totalSales || 0,
-        totalCost: backendData.purchaseCost || 0,
-        totalProfit: backendData.profit || 0,
-        profitMargin: backendData.profitMargin || 0,
-        // Transform SKU wise details to SKU profits array
-        skuProfits: (backendData.skuWiseDetails || []).map(sku => ({
-          sku: sku.sku,
-          revenue: sku.settlement || 0,
-          cost: sku.costPrice || 0,
-          profit: sku.totalProfit || 0
-        })),
-        // Include other details
-        dateFrom: backendData.dateFrom,
-        dateTo: backendData.dateTo,
+        // Financial summary - use backend field names that report component expects
+        totalSales: backendData.totalSales || backendData.totalRevenue || 0,
+        purchaseCost: backendData.purchaseCost || backendData.totalCost || 0,
+        profit: backendData.profit || backendData.totalProfit || 0,
+        profitMargin: backendData.profitMargin || backendData.margin || 0,
         shippingAndFees: backendData.shippingAndFees || 0,
         netSettlement: backendData.netSettlement || 0,
         otherCharges: backendData.otherCharges || 0,
+        otherChargesBreakdown: backendData.otherChargesBreakdown,
+        
+        // Date range
+        dateFrom: backendData.dateFrom,
+        dateTo: backendData.dateTo,
+        
+        // Order & SKU details
         orderDetails: backendData.orderDetails,
         fulfillmentDetails: backendData.fulfillmentDetails,
         returnsDetails: backendData.returnsDetails,
+        skuWiseDetails: backendData.skuWiseDetails || backendData.skuProfits || [],
+        
+        // Transfers
         bankTransfers: backendData.bankTransfers || []
       };
       
       console.log("📋 Transformed data:", transformedData);
       setReportData(transformedData);
+      console.log("✅ Report data set, moving to step 4");
       
       setStep(4);
     } catch (err) {

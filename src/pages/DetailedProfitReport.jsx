@@ -30,13 +30,32 @@ export default function DetailedProfitReport({ reportData }) {
     );
   }
 
+  // Ensure all required fields exist with defaults
+  const data = {
+    totalSales: reportData.totalSales || 0,
+    shippingAndFees: reportData.shippingAndFees || 0,
+    netSettlement: reportData.netSettlement || 0,
+    otherCharges: reportData.otherCharges || 0,
+    purchaseCost: reportData.purchaseCost || 0,
+    profit: reportData.profit || 0,
+    profitMargin: reportData.profitMargin || 0,
+    dateFrom: reportData.dateFrom,
+    dateTo: reportData.dateTo,
+    otherChargesBreakdown: reportData.otherChargesBreakdown,
+    orderDetails: reportData.orderDetails,
+    fulfillmentDetails: reportData.fulfillmentDetails,
+    returnsDetails: reportData.returnsDetails,
+    skuWiseDetails: reportData.skuWiseDetails || [],
+    bankTransfers: reportData.bankTransfers || []
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto p-6">
       {/* Header with Date Range */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
         <h1 className="text-3xl font-bold mb-2">Profit Analysis Report</h1>
         <p className="text-blue-100 text-lg">
-          Validating Profits from {formatDate(reportData.dateFrom)} to {formatDate(reportData.dateTo)}
+          Validating Profits from {formatDate(data.dateFrom)} to {formatDate(data.dateTo)}
         </p>
       </div>
 
@@ -45,7 +64,7 @@ export default function DetailedProfitReport({ reportData }) {
         <div className="divide-y divide-slate-100">
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Sales</span>
-            <span className="text-2xl font-bold text-slate-900">{formatCurrency(reportData.totalSales)}</span>
+            <span className="text-2xl font-bold text-slate-900">{formatCurrency(data.totalSales)}</span>
           </div>
 
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
@@ -93,7 +112,7 @@ export default function DetailedProfitReport({ reportData }) {
       </div>
 
       {/* Other Charges Breakdown */}
-      {reportData.otherChargesBreakdown && (
+      {data.otherChargesBreakdown && (
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <span className="text-orange-500">📊</span>
@@ -106,7 +125,7 @@ export default function DetailedProfitReport({ reportData }) {
                 <span className="text-slate-700 font-medium">Cost of Advertising</span>
               </div>
               <span className="text-lg font-bold text-slate-900">
-                {formatCurrency(reportData.otherChargesBreakdown.costOfAdvertising)}
+                {formatCurrency(data.otherChargesBreakdown.costOfAdvertising)}
               </span>
             </div>
             
@@ -116,7 +135,7 @@ export default function DetailedProfitReport({ reportData }) {
                 <span className="text-slate-700 font-medium">FBA Inbound Pickup Service</span>
               </div>
               <span className="text-lg font-bold text-slate-900">
-                {formatCurrency(reportData.otherChargesBreakdown.fbaInboundPickupService)}
+                {formatCurrency(data.otherChargesBreakdown.fbaInboundPickupService)}
               </span>
             </div>
             
@@ -126,7 +145,7 @@ export default function DetailedProfitReport({ reportData }) {
                 <span className="text-slate-700 font-medium">FBA Removal Order: Return Fee</span>
               </div>
               <span className="text-lg font-bold text-slate-900">
-                {formatCurrency(reportData.otherChargesBreakdown.fbaRemovalOrderReturnFee)}
+                {formatCurrency(data.otherChargesBreakdown.fbaRemovalOrderReturnFee)}
               </span>
             </div>
           </div>
@@ -134,7 +153,7 @@ export default function DetailedProfitReport({ reportData }) {
       )}
 
       {/* Order Details */}
-      {reportData.orderDetails && (
+      {data.orderDetails && (
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <span className="text-blue-500">📋</span>
@@ -143,30 +162,30 @@ export default function DetailedProfitReport({ reportData }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
               <span className="text-slate-700 font-medium">Total Orders</span>
-              <span className="text-2xl font-bold text-blue-600">{reportData.orderDetails.totalOrders}</span>
+              <span className="text-2xl font-bold text-blue-600">{data.orderDetails.totalOrders}</span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
               <span className="text-slate-700 font-medium">Delivered</span>
               <span className="text-2xl font-bold text-green-600">
-                {reportData.orderDetails.deliveredOrders}
-                <span className="text-sm ml-2">({formatPercentage(reportData.orderDetails.deliveryPercentage)})</span>
+                {data.orderDetails.deliveredOrders}
+                <span className="text-sm ml-2">({formatPercentage(data.orderDetails.deliveryPercentage)})</span>
               </span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-orange-50 rounded-lg">
               <span className="text-slate-700 font-medium">Courier Return</span>
               <span className="text-2xl font-bold text-orange-600">
-                {reportData.orderDetails.courierReturn}
-                <span className="text-sm ml-2">({formatPercentage(reportData.orderDetails.courierReturnPercentage)})</span>
+                {data.orderDetails.courierReturn}
+                <span className="text-sm ml-2">({formatPercentage(data.orderDetails.courierReturnPercentage)})</span>
               </span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-red-50 rounded-lg">
               <span className="text-slate-700 font-medium">Customer Return</span>
               <span className="text-2xl font-bold text-red-600">
-                {reportData.orderDetails.customerReturn}
-                <span className="text-sm ml-2">({formatPercentage(reportData.orderDetails.customerReturnPercentage)})</span>
+                {data.orderDetails.customerReturn}
+                <span className="text-sm ml-2">({formatPercentage(data.orderDetails.customerReturnPercentage)})</span>
               </span>
             </div>
           </div>
@@ -174,7 +193,7 @@ export default function DetailedProfitReport({ reportData }) {
       )}
 
       {/* Fulfillment Details */}
-      {reportData.fulfillmentDetails && (
+      {data.fulfillmentDetails && (
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <span className="text-purple-500">🚚</span>
@@ -183,24 +202,24 @@ export default function DetailedProfitReport({ reportData }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
               <span className="text-slate-700 font-medium">Easy Ship Order Count</span>
-              <span className="text-2xl font-bold text-blue-600">{reportData.fulfillmentDetails.easyShipOrderCount}</span>
+              <span className="text-2xl font-bold text-blue-600">{data.fulfillmentDetails.easyShipOrderCount}</span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
               <span className="text-slate-700 font-medium">FBA Order Count</span>
-              <span className="text-2xl font-bold text-purple-600">{reportData.fulfillmentDetails.fbaOrderCount}</span>
+              <span className="text-2xl font-bold text-purple-600">{data.fulfillmentDetails.fbaOrderCount}</span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
               <span className="text-slate-700 font-medium">Self Ship Order Count</span>
-              <span className="text-2xl font-bold text-green-600">{reportData.fulfillmentDetails.selfShipOrderCount}</span>
+              <span className="text-2xl font-bold text-green-600">{data.fulfillmentDetails.selfShipOrderCount}</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Returns Details */}
-      {reportData.returnsDetails && (
+      {data.returnsDetails && (
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <span className="text-red-500">↩️</span>
@@ -224,7 +243,7 @@ export default function DetailedProfitReport({ reportData }) {
       )}
 
       {/* Bank Transfers */}
-      {reportData.bankTransfers && reportData.bankTransfers.length > 0 && (
+      {data.bankTransfers && data.bankTransfers.length > 0 && (
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
           <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-slate-200">
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -247,10 +266,10 @@ export default function DetailedProfitReport({ reportData }) {
                   <td className="px-6 py-4 font-bold text-slate-900">Total</td>
                   <td className="px-6 py-4"></td>
                   <td className="px-6 py-4 text-right text-2xl font-black text-green-600">
-                    {formatCurrency(reportData.bankTransfers.reduce((sum, t) => sum + (t.amount || 0), 0))}
+                    {formatCurrency(data.bankTransfers.reduce((sum, t) => sum + (t.amount || 0), 0))}
                   </td>
                 </tr>
-                {reportData.bankTransfers.map((transfer, index) => (
+                {data.bankTransfers.map((transfer, index) => (
                   <tr key={index} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 text-slate-700">{formatDate(transfer.date)}</td>
                     <td className="px-6 py-4 text-slate-700">{transfer.account}</td>
@@ -264,7 +283,7 @@ export default function DetailedProfitReport({ reportData }) {
       )}
 
       {/* SKU Wise Details */}
-      {reportData.skuWiseDetails && reportData.skuWiseDetails.length > 0 && (
+      {data.skuWiseDetails && data.skuWiseDetails.length > 0 && (
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
           <div className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-200 flex justify-between items-center">
             <div>
@@ -293,7 +312,7 @@ export default function DetailedProfitReport({ reportData }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {reportData.skuWiseDetails.map((sku, index) => {
+                {data.skuWiseDetails.map((sku, index) => {
                   const isProfit = (sku.totalProfit || 0) >= 0;
                   const rowBgClass = isProfit ? 'hover:bg-green-50/50' : 'hover:bg-red-50/50';
                   
