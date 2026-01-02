@@ -12,6 +12,6 @@ export default defineConfig({
   preview: {
     host: true,
     port: 8080,
-    allowedHosts: 'all' // ✅ TEMPORARY BUT GUARANTEED FIX
+    allowedHosts: true // ✅ THIS IS THE FIX
   }
 })
