@@ -92,25 +92,42 @@ export default function Dashboard() {
       );
       
       console.log("📊 Fetching report...");
-      let response;
-      try {
-        // Try new detailed endpoint first
-        response = await axios.get(`${API_BASE}/api/profit/detailed`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        console.log("✅ Detailed report fetched:", response.data);
-        // Backend returns ApiResponse wrapper with data field
-        setReportData(response.data.data);
-      } catch (detailedErr) {
-        console.warn("⚠️ Detailed endpoint not available, falling back to standard profit endpoint");
-        // Fallback to standard endpoint
-        response = await axios.get(`${API_BASE}/api/profit`, {
-          headers: { Authorization: `Bearer ${getToken()}` },
-        });
-        console.log("✅ Standard report fetched:", response.data);
-        // Backend returns ApiResponse wrapper, extract data field
-        setReportData(response.data.data || response.data);
-      }
+      // Fetch profit report from standard endpoint
+      const response = await axios.get(`${API_BASE}/api/profit`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      console.log("✅ Report fetched:", response.data);
+      // Extract data from ApiResponse wrapper
+      const backendData = response.data.data || response.data;
+      console.log("📋 Backend data:", backendData);
+      
+      // Transform backend DTO to match frontend expectations
+      const transformedData = {
+        totalRevenue: backendData.totalSales || 0,
+        totalCost: backendData.purchaseCost || 0,
+        totalProfit: backendData.profit || 0,
+        profitMargin: backendData.profitMargin || 0,
+        // Transform SKU wise details to SKU profits array
+        skuProfits: (backendData.skuWiseDetails || []).map(sku => ({
+          sku: sku.sku,
+          revenue: sku.settlement || 0,
+          cost: sku.costPrice || 0,
+          profit: sku.totalProfit || 0
+        })),
+        // Include other details
+        dateFrom: backendData.dateFrom,
+        dateTo: backendData.dateTo,
+        shippingAndFees: backendData.shippingAndFees || 0,
+        netSettlement: backendData.netSettlement || 0,
+        otherCharges: backendData.otherCharges || 0,
+        orderDetails: backendData.orderDetails,
+        fulfillmentDetails: backendData.fulfillmentDetails,
+        returnsDetails: backendData.returnsDetails,
+        bankTransfers: backendData.bankTransfers || []
+      };
+      
+      console.log("📋 Transformed data:", transformedData);
+      setReportData(transformedData);
       
       setStep(4);
     } catch (err) {
