@@ -80,6 +80,7 @@ export default function Dashboard() {
     setLoading(true);
     setMessage("");
     try {
+      console.log("💾 Saving SKU costs...");
       // Save each SKU cost
       await Promise.all(
         Object.entries(skuCosts).map(([sku, costPrice]) => 
@@ -90,15 +91,31 @@ export default function Dashboard() {
         )
       );
       
-      // ✅ NEW: Fetch detailed report
-      const response = await axios.get(`${API_BASE}/api/profit/detailed`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
-      });
+      console.log("📊 Fetching report...");
+      let response;
+      try {
+        // Try new detailed endpoint first
+        response = await axios.get(`${API_BASE}/api/profit/detailed`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        console.log("✅ Detailed report fetched:", response.data);
+        // Backend returns ApiResponse wrapper with data field
+        setReportData(response.data.data);
+      } catch (detailedErr) {
+        console.warn("⚠️ Detailed endpoint not available, falling back to standard profit endpoint");
+        // Fallback to standard endpoint
+        response = await axios.get(`${API_BASE}/api/profit`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        console.log("✅ Standard report fetched:", response.data);
+        // Backend returns ApiResponse wrapper, extract data field
+        setReportData(response.data.data || response.data);
+      }
       
-      setReportData(response.data.data); // Extract data from ApiResponse wrapper
       setStep(4);
     } catch (err) {
-      setMessage(err.response?.data?.message || "Failed to save SKU costs");
+      console.error("❌ Error:", err);
+      setMessage(err.response?.data?.message || "Failed to save SKU costs or fetch report");
     } finally {
       setLoading(false);
     }
