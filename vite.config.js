@@ -10,8 +10,12 @@ export default defineConfig({
   },
 
   preview: {
-    host: true,
+    host: '0.0.0.0',
     port: 8080,
-    allowedHosts: true // ✅ THIS IS THE FIX
+    strictPort: false,
+    allowedHosts: [
+      'amazonprofitfrontend-production.up.railway.app',
+      '.railway.app'
+    ]
   }
 })
