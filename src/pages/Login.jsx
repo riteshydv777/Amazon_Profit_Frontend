@@ -40,7 +40,7 @@ const Login = () => {
             
             setToken(response.token);
             localStorage.setItem("userEmail", formData.email);
-            navigate("/dashboard");
+            navigate("/");
         } catch (err) {
             console.error("❌ Login failed:", err);
             setError(err.response?.data?.message || err.message || "Login failed. Please try again.");
