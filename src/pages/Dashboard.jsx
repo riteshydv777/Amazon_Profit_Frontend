@@ -8,6 +8,7 @@ export default function Dashboard() {
   const [step, setStep] = useState(0); // 0: Start, 1: Upload Orders, 2: Upload Payments, 3: SKU Cost, 4: Report
   const [userName, setUserName] = useState("");
   const [orderFile, setOrderFile] = useState(null);
+  const [orderSummary, setOrderSummary] = useState(null);
   const [paymentFile, setPaymentFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [skus, setSkus] = useState([]);
@@ -29,9 +30,10 @@ export default function Dashboard() {
     try {
       const formData = new FormData();
       formData.append("file", orderFile);
-      await axios.post(`${API_BASE}/api/upload/orders`, formData, {
+      const response = await axios.post(`${API_BASE}/api/upload/orders`, formData, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
+      setOrderSummary(response.data.data);
       setStep(2);
     } catch (err) {
       setMessage(err.response?.data?.message || "Failed to upload order sheet");
@@ -179,6 +181,39 @@ export default function Dashboard() {
           )}
 
           <div className="p-8 md:p-12">
+            {orderSummary && step > 1 && step < 4 && (
+              <div className="mb-10 bg-blue-50 border border-blue-100 rounded-2xl p-6 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-blue-900 flex items-center">
+                    <span className="mr-2">📋</span> Order Data Summary
+                  </h3>
+                  <span className="text-xs font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                    File: {orderSummary.fileName}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div className="bg-white p-3 rounded-xl border border-blue-100">
+                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">Total Orders</p>
+                    <p className="text-xl font-black text-blue-600">{orderSummary.totalOrders}</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-blue-100">
+                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">Total Sales</p>
+                    <p className="text-xl font-black text-green-600">{formatCurrency(orderSummary.totalSales)}</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-blue-100">
+                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">Unique SKUs</p>
+                    <p className="text-xl font-black text-purple-600">{orderSummary.uniqueSkus}</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-xl border border-blue-100">
+                    <p className="text-xs text-slate-500 uppercase font-bold mb-1">Date Range</p>
+                    <p className="text-sm font-bold text-slate-700">
+                      {orderSummary.dateFrom} <br/> to {orderSummary.dateTo}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {step === 0 && (
               <div className="text-center py-12">
                 <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center text-5xl mx-auto mb-8 shadow-inner">
@@ -207,7 +242,7 @@ export default function Dashboard() {
                 <div className="border-3 border-dashed border-slate-200 rounded-2xl p-12 text-center hover:border-blue-400 transition-colors bg-slate-50">
                   <input
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.txt"
                     onChange={(e) => setOrderFile(e.target.files[0])}
                     className="hidden"
                     id="order-upload"
@@ -215,7 +250,7 @@ export default function Dashboard() {
                   <label htmlFor="order-upload" className="cursor-pointer group">
                     <div className="text-6xl mb-6 group-hover:scale-110 transition-transform">📄</div>
                     <p className="text-slate-700 font-semibold mb-2">
-                      {orderFile ? orderFile.name : "Click to select Order CSV"}
+                      {orderFile ? orderFile.name : "Click to select Order CSV or TXT"}
                     </p>
                     <p className="text-slate-400 text-sm mb-6">Max file size 10MB</p>
                     <span className="bg-white border-2 border-blue-600 text-blue-600 px-6 py-2 rounded-lg text-sm font-bold group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -439,6 +474,7 @@ export default function Dashboard() {
                       if(window.confirm("Are you sure you want to start over? Current analysis will be cleared from view.")) {
                         setStep(0);
                         setOrderFile(null);
+                        setOrderSummary(null);
                         setPaymentFile(null);
                         setReportData(null);
                       }
