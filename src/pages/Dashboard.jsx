@@ -54,28 +54,36 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       
-      // Fetch SKUs after both uploads to initialize cost management
-      const response = await axios.get(`${API_BASE}/api/profit`, {
+      // 🚀 Fetch unique SKUs found in files from the dedicated endpoint
+      const skuResponse = await axios.get(`${API_BASE}/api/sku`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
+      const skuList = skuResponse.data?.data || skuResponse.data || [];
 
-      // Backend may wrap response in ApiResponse -> { success, message, data }
-      const payload = response.data?.data || response.data || {};
-
-      // Debug: print payload to browser console to help diagnose missing SKUs
-      console.log("🔎 profit payload:", payload, "raw response:", response.data);
-
-      // Accept several possible field names returned by backend
-      // If payload itself is an array, use it directly
-      const skuList = Array.isArray(payload) ? payload : (payload.skuProfits || payload.skuWiseDetails || []);
+      // 💰 Fetch existing SKU costs to pre-fill the form
+      let existingCosts = {};
+      try {
+        const costResponse = await axios.get(`${API_BASE}/api/sku-cost`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const savedCosts = costResponse.data?.data || costResponse.data || [];
+        if (Array.isArray(savedCosts)) {
+          savedCosts.forEach(c => {
+            if (c.sku) existingCosts[c.sku] = c.costPrice;
+          });
+        }
+      } catch (err) {
+        console.warn("Could not fetch existing SKU costs:", err);
+      }
 
       if (Array.isArray(skuList) && skuList.length > 0) {
-        const uniqueSkus = [...new Set(skuList.map(s => s.sku || s.skuName || s.sku_code || s.SKU || s.sku_name).filter(Boolean))];
+        // Normalize: Backend returns List<String>
+        const uniqueSkus = skuList.map(s => typeof s === 'string' ? s : (s.sku || s.skuName || s.sku_name || s.SKU)).filter(Boolean);
         setSkus(uniqueSkus);
+        
         const initialCosts = {};
-        skuList.forEach(s => {
-          const key = s.sku || s.skuName || s.sku_code || s.SKU || s.sku_name;
-          if (key && !initialCosts[key]) initialCosts[key] = s.cost || s.costPrice || "";
+        uniqueSkus.forEach(sku => {
+          initialCosts[sku] = existingCosts[sku] || "";
         });
         setSkuCosts(initialCosts);
       }
