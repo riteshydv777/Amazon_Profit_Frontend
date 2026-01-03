@@ -1,7 +1,4 @@
 import React, { useEffect, useState } from "react";
-
-
-import { useEffect, useState } from "react";
 import { getToken } from "../utils/auth";
 import axios from "axios";
 import DetailedProfitReport from "./DetailedProfitReport";
