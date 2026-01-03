@@ -58,13 +58,20 @@ export default function Dashboard() {
       const response = await axios.get(`${API_BASE}/api/profit`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
-      
-      if (response.data && response.data.skuProfits) {
-        const uniqueSkus = response.data.skuProfits.map(s => s.sku);
+
+      // Backend may wrap response in ApiResponse -> { success, message, data }
+      const payload = response.data?.data || response.data || {};
+
+      // Accept several possible field names returned by backend
+      const skuList = payload.skuProfits || payload.skuWiseDetails || payload.skuProfits || [];
+
+      if (Array.isArray(skuList) && skuList.length > 0) {
+        const uniqueSkus = skuList.map(s => s.sku || s.skuName || s.sku_code || s.SKU).filter(Boolean);
         setSkus(uniqueSkus);
         const initialCosts = {};
-        response.data.skuProfits.forEach(s => {
-          initialCosts[s.sku] = s.cost || "";
+        skuList.forEach(s => {
+          const key = s.sku || s.skuName || s.sku_code || s.SKU;
+          if (key) initialCosts[key] = s.cost || s.costPrice || "";
         });
         setSkuCosts(initialCosts);
       }
