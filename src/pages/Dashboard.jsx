@@ -534,23 +534,24 @@ setStep(4);
               </div>
             )}
 
-            {step === 4 && reportData && (
-              <DetailedProfitReport
-                reportData={reportData}
-                orderSummary={orderSummary}
-                skus={skus}
-                downloadReport={downloadReport}
-                onStartOver={() => {
-                  if(window.confirm("Are you sure you want to start over? Current analysis will be cleared from view.")) {
-                    setStep(0);
-                    setOrderFile(null);
-                    setOrderSummary(null);
-                    setPaymentFile(null);
-                    setReportData(null);
-                  }
-                }}
-              />
-            )}
+{reportData && (
+  <DetailedProfitReport
+    reportData={reportData}
+    orderSummary={orderSummary}
+    skus={skus}
+    downloadReport={downloadReport}
+    onStartOver={() => {
+      if(window.confirm("Are you sure you want to start over? Current analysis will be cleared from view.")) {
+        setStep(0);
+        setOrderFile(null);
+        setOrderSummary(null);
+        setPaymentFile(null);
+        setReportData(null);
+      }
+    }}
+  />
+)}
+
 
             {step === 4 && !reportData && (
               <div className="max-w-2xl mx-auto text-center">
