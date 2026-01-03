@@ -80,9 +80,14 @@ export default function Dashboard() {
       }
 
       if (Array.isArray(skuList) && skuList.length > 0) {
-        // Backend returns List<String> directly, no need for complex normalization
-        const uniqueSkus = skuList.filter(s => s && typeof s === 'string' && s.trim()).map(s => s.trim().toUpperCase());
-        console.log("🔍 Processed SKUs:", uniqueSkus);
+        // Backend returns List<String> directly, deduplicate using Set
+        const uniqueSkusSet = new Set(
+          skuList
+            .filter(s => s && typeof s === 'string' && s.trim())
+            .map(s => s.trim().toUpperCase())
+        );
+        const uniqueSkus = Array.from(uniqueSkusSet);
+        console.log("🔍 Processed SKUs (deduplicated):", uniqueSkus, "Total:", uniqueSkus.length);
         setSkus(uniqueSkus);
         
         const initialCosts = {};
@@ -537,6 +542,21 @@ export default function Dashboard() {
                   }
                 }}
               />
+            )}
+
+            {step === 4 && !reportData && (
+              <div className="max-w-2xl mx-auto text-center">
+                <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-8">
+                  <p className="text-red-800 font-bold text-lg">❌ Report Generation Failed</p>
+                  <p className="text-red-600 mt-2">{message || "Could not generate report. Please try again."}</p>
+                  <button 
+                    onClick={() => setStep(3)} 
+                    className="mt-4 bg-red-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-red-700"
+                  >
+                    ← Go Back to SKU Costs
+                  </button>
+                </div>
+              </div>
             )}
             </div>
           </div>
