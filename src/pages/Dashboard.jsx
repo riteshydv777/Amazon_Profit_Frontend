@@ -535,7 +535,7 @@ setStep(4);
             )}
 
           {/* ================= FINAL REPORT (STEP 4) ================= */}
-{step === 4 && reportData && (
+{reportData && (
   <DetailedProfitReport
     reportData={reportData}
     orderSummary={orderSummary}
