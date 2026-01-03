@@ -125,7 +125,7 @@ export default function Dashboard() {
       
       console.log("📊 Fetching report...");
       // Fetch profit report from standard endpoint
-      const response = await axios.get(`${API_BASE}/api/profit`, {
+      const response = await axios.get(`${API_BASE}/api/profit/detailed`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
       console.log("✅ Report fetched:", response.data);
