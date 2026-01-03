@@ -136,37 +136,32 @@ export default function Dashboard() {
       
       // Map backend data to component field names
       const transformedData = {
-        // Financial summary - use backend field names that report component expects
-        totalSales: backendData.totalSales || backendData.totalRevenue || 0,
-        purchaseCost: backendData.purchaseCost || backendData.totalCost || 0,
-        profit: backendData.profit || backendData.totalProfit || 0,
-        profitMargin: backendData.profitMargin || backendData.margin || 0,
-        shippingAndFees: backendData.shippingAndFees || 0,
-        netSettlement: backendData.netSettlement || 0,
-        otherCharges: backendData.otherCharges || 0,
-        otherChargesBreakdown: backendData.otherChargesBreakdown,
-        
-        // Date range
-        dateFrom: backendData.dateFrom,
-        dateTo: backendData.dateTo,
-        
-        // Order & SKU details
-        orderDetails: backendData.orderDetails,
-        fulfillmentDetails: backendData.fulfillmentDetails,
-        returnsDetails: backendData.returnsDetails,
-        skuWiseDetails: (Array.isArray(backendData) ? backendData : (backendData.skuWiseDetails || backendData.skuProfits || [])).map(s => ({
-          ...s,
-          sku: s.sku || s.skuName || s.sku_code || s.SKU || s.sku_name,
-          productName: s.productName || s.product_name || s.sku || s.sku_name || "Unknown Product",
-          costPrice: s.costPrice || s.cost || 0,
-          settlement: s.settlement || s.revenue || 0,
-          totalProfit: s.totalProfit || s.profit || 0
-        })),
-        
-        // Transfers
-        bankTransfers: backendData.bankTransfers || []
-      };
-      
+  // Financial summary (DETAILED endpoint fields)
+  totalSales: backendData.totalSales || 0,
+  purchaseCost: backendData.purchaseCost || 0,
+  profit: backendData.profit || 0,
+  profitMargin: backendData.profitMargin || 0,
+  shippingAndFees: backendData.shippingAndFees || 0,
+  netSettlement: backendData.netSettlement || 0,
+  otherCharges: backendData.otherCharges || 0,
+  otherChargesBreakdown: backendData.otherChargesBreakdown,
+
+  // Date range
+  dateFrom: backendData.dateFrom,
+  dateTo: backendData.dateTo,
+
+  // Order & SKU details
+  orderDetails: backendData.orderDetails,
+  fulfillmentDetails: backendData.fulfillmentDetails,
+  returnsDetails: backendData.returnsDetails,
+
+  // 🔥 IMPORTANT: backend already returns skuWiseDetails correctly
+  skuWiseDetails: backendData.skuWiseDetails || [],
+
+  // Transfers
+  bankTransfers: backendData.bankTransfers || []
+};
+
       console.log("📋 Transformed data:", transformedData);
       setReportData(transformedData);
       console.log("✅ Report data set, moving to step 4");
@@ -285,7 +280,7 @@ export default function Dashboard() {
             {reportData && (
               <div className="text-right bg-green-50 border border-green-200 rounded-lg px-4 py-3">
                 <p className="text-xs text-green-600 font-semibold">Latest Profit</p>
-                <p className="text-2xl font-bold text-green-700">{formatCurrency(reportData.totalProfit)}</p>
+                <p className="text-2xl font-bold text-green-700">{formatCurrency(reportData.profit)}</p>
               </div>
             )}
           </div>
