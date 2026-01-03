@@ -1,3 +1,15 @@
+useEffect(() => {
+  const savedStep = sessionStorage.getItem("step");
+  const savedReport = sessionStorage.getItem("reportData");
+
+  if (savedStep && savedReport) {
+    setStep(Number(savedStep));
+    setReportData(JSON.parse(savedReport));
+  }
+}, []);
+
+
+
 import { useEffect, useState } from "react";
 import { getToken } from "../utils/auth";
 import axios from "axios";
@@ -164,6 +176,19 @@ export default function Dashboard() {
 
       console.log("📋 Transformed data:", transformedData);
       setReportData(transformedData);
+
+      console.log("📋 Transformed data:", transformedData);
+
+// 🔥 SAVE REPORT IN SESSION (IMPORTANT)
+sessionStorage.setItem("step", "4");
+sessionStorage.setItem("reportData", JSON.stringify(transformedData));
+
+setReportData(transformedData);
+
+console.log("✅ Report data set, moving to step 4");
+
+setStep(4);
+
       console.log("✅ Report data set, moving to step 4");
       
       setStep(4);
