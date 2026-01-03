@@ -1,13 +1,4 @@
-useEffect(() => {
-  const savedStep = sessionStorage.getItem("step");
-  const savedReport = sessionStorage.getItem("reportData");
-
-  if (savedStep && savedReport) {
-    setStep(Number(savedStep));
-    setReportData(JSON.parse(savedReport));
-  }
-}, []);
-
+import React, { useEffect, useState } from "react";
 
 
 import { useEffect, useState } from "react";
