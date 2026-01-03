@@ -80,14 +80,14 @@ export default function Dashboard() {
       }
 
       if (Array.isArray(skuList) && skuList.length > 0) {
-        // Backend returns List<String> directly, deduplicate using Set
+        // Backend returns List<String> directly, deduplicate and clean using Set
         const uniqueSkusSet = new Set(
           skuList
-            .filter(s => s && typeof s === 'string' && s.trim())
-            .map(s => s.trim().toUpperCase())
+            .filter(s => s && typeof s === 'string' && s.trim().length > 0) // Filter empty/whitespace
+            .map(s => s.trim().toUpperCase()) // Normalize
         );
-        const uniqueSkus = Array.from(uniqueSkusSet);
-        console.log("🔍 Processed SKUs (deduplicated):", uniqueSkus, "Total:", uniqueSkus.length);
+        const uniqueSkus = Array.from(uniqueSkusSet).sort(); // Also sort for consistency
+        console.log("🔍 Backend returned:", skuList.length, "SKUs → Deduplicated to:", uniqueSkus.length, uniqueSkus);
         setSkus(uniqueSkus);
         
         const initialCosts = {};

@@ -30,15 +30,15 @@ export default function DetailedProfitReport({ reportData }) {
     );
   }
 
-  // Ensure all required fields exist with defaults
+  // Ensure all required fields exist with defaults - map backend field names
   const data = {
-    totalSales: reportData.totalSales || 0,
+    totalSales: reportData.totalSales || reportData.totalRevenue || 0,
     shippingAndFees: reportData.shippingAndFees || 0,
-    netSettlement: reportData.netSettlement || 0,
+    netSettlement: reportData.netSettlement || reportData.totalSettlement || 0,
     otherCharges: reportData.otherCharges || 0,
-    purchaseCost: reportData.purchaseCost || 0,
-    profit: reportData.profit || 0,
-    profitMargin: reportData.profitMargin || 0,
+    purchaseCost: reportData.purchaseCost || reportData.totalCost || 0,
+    profit: reportData.profit || reportData.totalProfit || 0,
+    profitMargin: reportData.profitMargin || reportData.margin || 0,
     dateFrom: reportData.dateFrom,
     dateTo: reportData.dateTo,
     otherChargesBreakdown: reportData.otherChargesBreakdown,
@@ -70,9 +70,9 @@ export default function DetailedProfitReport({ reportData }) {
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Shipping and Fees</span>
             <span className="text-2xl font-bold text-blue-600">
-              {formatCurrency(reportData.shippingAndFees)}
+              {formatCurrency(data.shippingAndFees)}
               <span className="text-sm text-slate-500 ml-2">
-                ({formatPercentage((reportData.shippingAndFees / reportData.totalSales) * 100)})
+                ({formatPercentage((data.shippingAndFees / data.totalSales) * 100)})
               </span>
             </span>
           </div>
@@ -80,9 +80,9 @@ export default function DetailedProfitReport({ reportData }) {
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Net Settlement</span>
             <span className="text-2xl font-bold text-green-600">
-              {formatCurrency(reportData.netSettlement)}
+              {formatCurrency(data.netSettlement)}
               <span className="text-sm text-slate-500 ml-2">
-                ({formatPercentage((reportData.netSettlement / reportData.totalSales) * 100)})
+                ({formatPercentage((data.netSettlement / data.totalSales) * 100)})
               </span>
             </span>
           </div>
@@ -90,22 +90,22 @@ export default function DetailedProfitReport({ reportData }) {
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Other Charges</span>
             <span className="text-2xl font-bold text-orange-600">
-              {formatCurrency(reportData.otherCharges)}
+              {formatCurrency(data.otherCharges)}
               <span className="text-sm text-slate-500 ml-2">
-                ({formatPercentage((reportData.otherCharges / reportData.totalSales) * 100)})
+                ({formatPercentage((data.otherCharges / data.totalSales) * 100)})
               </span>
             </span>
           </div>
 
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Purchase Cost</span>
-            <span className="text-2xl font-bold text-purple-600">{formatCurrency(reportData.purchaseCost)}</span>
+            <span className="text-2xl font-bold text-purple-600">{formatCurrency(data.purchaseCost)}</span>
           </div>
 
           <div className="flex justify-between items-center p-8 bg-gradient-to-r from-green-50 to-emerald-50 border-t-4 border-green-500">
             <span className="text-slate-800 font-bold text-2xl">Profit</span>
-            <span className={`text-4xl font-black ${reportData.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(reportData.profit)}
+            <span className={`text-4xl font-black ${data.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(data.profit)}
             </span>
           </div>
         </div>
