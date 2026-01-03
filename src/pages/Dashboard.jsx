@@ -58,7 +58,9 @@ export default function Dashboard() {
       const skuResponse = await axios.get(`${API_BASE}/api/sku`, {
         headers: { Authorization: `Bearer ${getToken()}` },
       });
-      const skuList = skuResponse.data?.data || skuResponse.data || [];
+      console.log("📦 SKU Response:", skuResponse.data);
+      // Backend may return List<String> directly or wrapped in ApiResponse
+      const skuList = Array.isArray(skuResponse.data) ? skuResponse.data : (skuResponse.data?.data || []);
 
       // 💰 Fetch existing SKU costs to pre-fill the form
       let existingCosts = {};
@@ -66,7 +68,8 @@ export default function Dashboard() {
         const costResponse = await axios.get(`${API_BASE}/api/sku-cost`, {
           headers: { Authorization: `Bearer ${getToken()}` },
         });
-        const savedCosts = costResponse.data?.data || costResponse.data || [];
+        console.log("💰 SKU Cost Response:", costResponse.data);
+        const savedCosts = costResponse.data || [];
         if (Array.isArray(savedCosts)) {
           savedCosts.forEach(c => {
             if (c.sku) existingCosts[c.sku] = c.costPrice;
@@ -77,15 +80,20 @@ export default function Dashboard() {
       }
 
       if (Array.isArray(skuList) && skuList.length > 0) {
-        // Normalize: Backend returns List<String>
-        const uniqueSkus = skuList.map(s => typeof s === 'string' ? s : (s.sku || s.skuName || s.sku_name || s.SKU)).filter(Boolean);
+        // Backend returns List<String> directly, no need for complex normalization
+        const uniqueSkus = skuList.filter(s => s && typeof s === 'string' && s.trim()).map(s => s.trim().toUpperCase());
+        console.log("🔍 Processed SKUs:", uniqueSkus);
         setSkus(uniqueSkus);
         
         const initialCosts = {};
         uniqueSkus.forEach(sku => {
           initialCosts[sku] = existingCosts[sku] || "";
         });
+        console.log("💰 Initial costs:", initialCosts);
         setSkuCosts(initialCosts);
+      } else {
+        console.log("❌ No SKUs found in response. Response type:", typeof skuList, "Array?:", Array.isArray(skuList), "Length:", skuList?.length);
+        setMessage("⚠️ No SKUs found. Please ensure order and payment files are uploaded correctly.");
       }
       setStep(3);
     } catch (err) {
