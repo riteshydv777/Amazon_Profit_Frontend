@@ -3,7 +3,7 @@ import { getToken } from "../utils/auth";
 import axios from "axios";
 import DetailedProfitReport from "./DetailedProfitReport";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : "http://localhost:8080");
 
 export default function Dashboard() {
   const [step, setStep] = useState(0); // 0: Start, 1: Upload Orders, 2: Upload Payments, 3: SKU Cost, 4: Report
@@ -62,16 +62,20 @@ export default function Dashboard() {
       // Backend may wrap response in ApiResponse -> { success, message, data }
       const payload = response.data?.data || response.data || {};
 
+      // Debug: print payload to browser console to help diagnose missing SKUs
+      console.log("🔎 profit payload:", payload, "raw response:", response.data);
+
       // Accept several possible field names returned by backend
-      const skuList = payload.skuProfits || payload.skuWiseDetails || payload.skuProfits || [];
+      // If payload itself is an array, use it directly
+      const skuList = Array.isArray(payload) ? payload : (payload.skuProfits || payload.skuWiseDetails || []);
 
       if (Array.isArray(skuList) && skuList.length > 0) {
-        const uniqueSkus = skuList.map(s => s.sku || s.skuName || s.sku_code || s.SKU).filter(Boolean);
+        const uniqueSkus = [...new Set(skuList.map(s => s.sku || s.skuName || s.sku_code || s.SKU || s.sku_name).filter(Boolean))];
         setSkus(uniqueSkus);
         const initialCosts = {};
         skuList.forEach(s => {
-          const key = s.sku || s.skuName || s.sku_code || s.SKU;
-          if (key) initialCosts[key] = s.cost || s.costPrice || "";
+          const key = s.sku || s.skuName || s.sku_code || s.SKU || s.sku_name;
+          if (key && !initialCosts[key]) initialCosts[key] = s.cost || s.costPrice || "";
         });
         setSkuCosts(initialCosts);
       }
@@ -129,7 +133,14 @@ export default function Dashboard() {
         orderDetails: backendData.orderDetails,
         fulfillmentDetails: backendData.fulfillmentDetails,
         returnsDetails: backendData.returnsDetails,
-        skuWiseDetails: backendData.skuWiseDetails || backendData.skuProfits || [],
+        skuWiseDetails: (Array.isArray(backendData) ? backendData : (backendData.skuWiseDetails || backendData.skuProfits || [])).map(s => ({
+          ...s,
+          sku: s.sku || s.skuName || s.sku_code || s.SKU || s.sku_name,
+          productName: s.productName || s.product_name || s.sku || s.sku_name || "Unknown Product",
+          costPrice: s.costPrice || s.cost || 0,
+          settlement: s.settlement || s.revenue || 0,
+          totalProfit: s.totalProfit || s.profit || 0
+        })),
         
         // Transfers
         bankTransfers: backendData.bankTransfers || []
@@ -157,16 +168,16 @@ export default function Dashboard() {
   };
 
   const downloadReport = () => {
-    if (!reportData || !reportData.skuProfits) return;
+    if (!reportData || !reportData.skuWiseDetails) return;
     const headers = ["SKU", "Revenue", "Cost", "Profit", "Margin %"];
-    const rows = reportData.skuProfits.map((sku) => {
-      const profit = sku.profit || 0;
-      const revenue = sku.revenue || 0;
+    const rows = reportData.skuWiseDetails.map((sku) => {
+      const profit = sku.profit || sku.totalProfit || 0;
+      const revenue = sku.revenue || sku.settlement || 0;
       const margin = revenue ? ((profit / revenue) * 100).toFixed(2) : 0;
       return [
-        sku.sku,
+        sku.sku || sku.sku_name || sku.skuName,
         revenue,
-        sku.cost || 0,
+        sku.cost || sku.costPrice || 0,
         profit,
         margin
       ];
