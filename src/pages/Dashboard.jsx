@@ -520,7 +520,7 @@ setStep(4);
                     </table>
                   </div>
                 </div>
-
+    
                 <div className="flex justify-between items-center">
                   <button onClick={() => setStep(2)} className="text-slate-500 font-bold hover:text-slate-700">← Back</button>
                   <button
@@ -534,14 +534,15 @@ setStep(4);
               </div>
             )}
 
-{reportData && (
+          {/* ================= FINAL REPORT (STEP 4) ================= */}
+{step === 4 && reportData && (
   <DetailedProfitReport
     reportData={reportData}
     orderSummary={orderSummary}
     skus={skus}
     downloadReport={downloadReport}
     onStartOver={() => {
-      if(window.confirm("Are you sure you want to start over? Current analysis will be cleared from view.")) {
+      if (window.confirm("Are you sure you want to start over?")) {
         setStep(0);
         setOrderFile(null);
         setOrderSummary(null);
@@ -551,7 +552,6 @@ setStep(4);
     }}
   />
 )}
-
 
             {step === 4 && !reportData && (
               <div className="max-w-2xl mx-auto text-center">
