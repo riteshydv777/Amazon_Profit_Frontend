@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function DetailedProfitReport({ reportData }) {
+export default function DetailedProfitReport({ reportData, orderSummary, downloadReport, onStartOver }) {
   const formatCurrency = (value) => {
     return new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -25,37 +25,27 @@ export default function DetailedProfitReport({ reportData }) {
   if (!reportData) {
     return (
       <div className="text-center py-12">
-        <p className="text-slate-500">No report data available</p>
+        <div className="text-6xl mb-4">⚠️</div>
+        <p className="text-slate-500 text-lg">No report data available</p>
+        <button 
+          onClick={onStartOver}
+          className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700"
+        >
+          Start Over
+        </button>
       </div>
     );
   }
 
-  // Ensure all required fields exist with defaults - map backend field names
-  const data = {
-    totalSales: reportData.totalSales || reportData.totalRevenue || 0,
-    shippingAndFees: reportData.shippingAndFees || 0,
-    netSettlement: reportData.netSettlement || reportData.totalSettlement || 0,
-    otherCharges: reportData.otherCharges || 0,
-    purchaseCost: reportData.purchaseCost || reportData.totalCost || 0,
-    profit: reportData.profit || reportData.totalProfit || 0,
-    profitMargin: reportData.profitMargin || reportData.margin || 0,
-    dateFrom: reportData.dateFrom,
-    dateTo: reportData.dateTo,
-    otherChargesBreakdown: reportData.otherChargesBreakdown,
-    orderDetails: reportData.orderDetails,
-    fulfillmentDetails: reportData.fulfillmentDetails,
-    returnsDetails: reportData.returnsDetails,
-    skuWiseDetails: reportData.skuWiseDetails || [],
-    bankTransfers: reportData.bankTransfers || []
-  };
+  console.log("📊 Rendering report with data:", reportData);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto p-6">
+    <div className="space-y-8 max-w-7xl mx-auto">
       {/* Header with Date Range */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white shadow-xl">
-        <h1 className="text-3xl font-bold mb-2">Profit Analysis Report</h1>
+        <h1 className="text-3xl font-bold mb-2">📊 Profit Analysis Report</h1>
         <p className="text-blue-100 text-lg">
-          Validating Profits from {formatDate(data.dateFrom)} to {formatDate(data.dateTo)}
+          Validating Profits from {formatDate(reportData.dateFrom)} to {formatDate(reportData.dateTo)}
         </p>
       </div>
 
@@ -64,15 +54,15 @@ export default function DetailedProfitReport({ reportData }) {
         <div className="divide-y divide-slate-100">
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Sales</span>
-            <span className="text-2xl font-bold text-slate-900">{formatCurrency(data.totalSales)}</span>
+            <span className="text-2xl font-bold text-slate-900">{formatCurrency(reportData.totalSales)}</span>
           </div>
 
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Shipping and Fees</span>
             <span className="text-2xl font-bold text-blue-600">
-              {formatCurrency(data.shippingAndFees)}
+              {formatCurrency(reportData.shippingAndFees)}
               <span className="text-sm text-slate-500 ml-2">
-                ({formatPercentage((data.shippingAndFees / data.totalSales) * 100)})
+                ({formatPercentage((reportData.shippingAndFees / reportData.totalSales) * 100)})
               </span>
             </span>
           </div>
@@ -80,9 +70,9 @@ export default function DetailedProfitReport({ reportData }) {
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Net Settlement</span>
             <span className="text-2xl font-bold text-green-600">
-              {formatCurrency(data.netSettlement)}
+              {formatCurrency(reportData.netSettlement)}
               <span className="text-sm text-slate-500 ml-2">
-                ({formatPercentage((data.netSettlement / data.totalSales) * 100)})
+                ({formatPercentage((reportData.netSettlement / reportData.totalSales) * 100)})
               </span>
             </span>
           </div>
@@ -90,29 +80,29 @@ export default function DetailedProfitReport({ reportData }) {
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Other Charges</span>
             <span className="text-2xl font-bold text-orange-600">
-              {formatCurrency(data.otherCharges)}
+              {formatCurrency(reportData.otherCharges)}
               <span className="text-sm text-slate-500 ml-2">
-                ({formatPercentage((data.otherCharges / data.totalSales) * 100)})
+                ({formatPercentage((reportData.otherCharges / reportData.totalSales) * 100)})
               </span>
             </span>
           </div>
 
           <div className="flex justify-between items-center p-6 hover:bg-slate-50 transition-colors">
             <span className="text-slate-700 font-semibold text-lg">Purchase Cost</span>
-            <span className="text-2xl font-bold text-purple-600">{formatCurrency(data.purchaseCost)}</span>
+            <span className="text-2xl font-bold text-purple-600">{formatCurrency(reportData.purchaseCost)}</span>
           </div>
 
           <div className="flex justify-between items-center p-8 bg-gradient-to-r from-green-50 to-emerald-50 border-t-4 border-green-500">
             <span className="text-slate-800 font-bold text-2xl">Profit</span>
-            <span className={`text-4xl font-black ${data.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {formatCurrency(data.profit)}
+            <span className={`text-4xl font-black ${reportData.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(reportData.profit)}
             </span>
           </div>
         </div>
       </div>
 
       {/* Other Charges Breakdown */}
-      {data.otherChargesBreakdown && (
+      {reportData.otherChargesBreakdown && (
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <span className="text-orange-500">📊</span>
@@ -125,7 +115,7 @@ export default function DetailedProfitReport({ reportData }) {
                 <span className="text-slate-700 font-medium">Cost of Advertising</span>
               </div>
               <span className="text-lg font-bold text-slate-900">
-                {formatCurrency(data.otherChargesBreakdown.costOfAdvertising)}
+                {formatCurrency(reportData.otherChargesBreakdown.costOfAdvertising)}
               </span>
             </div>
             
@@ -135,7 +125,7 @@ export default function DetailedProfitReport({ reportData }) {
                 <span className="text-slate-700 font-medium">FBA Inbound Pickup Service</span>
               </div>
               <span className="text-lg font-bold text-slate-900">
-                {formatCurrency(data.otherChargesBreakdown.fbaInboundPickupService)}
+                {formatCurrency(reportData.otherChargesBreakdown.fbaInboundPickupService)}
               </span>
             </div>
             
@@ -145,7 +135,7 @@ export default function DetailedProfitReport({ reportData }) {
                 <span className="text-slate-700 font-medium">FBA Removal Order: Return Fee</span>
               </div>
               <span className="text-lg font-bold text-slate-900">
-                {formatCurrency(data.otherChargesBreakdown.fbaRemovalOrderReturnFee)}
+                {formatCurrency(reportData.otherChargesBreakdown.fbaRemovalOrderReturnFee)}
               </span>
             </div>
           </div>
@@ -153,7 +143,7 @@ export default function DetailedProfitReport({ reportData }) {
       )}
 
       {/* Order Details */}
-      {data.orderDetails && (
+      {reportData.orderDetails && (
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <span className="text-blue-500">📋</span>
@@ -162,30 +152,30 @@ export default function DetailedProfitReport({ reportData }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex justify-between items-center p-4 bg-slate-50 rounded-lg">
               <span className="text-slate-700 font-medium">Total Orders</span>
-              <span className="text-2xl font-bold text-blue-600">{data.orderDetails.totalOrders}</span>
+              <span className="text-2xl font-bold text-blue-600">{reportData.orderDetails.totalOrders}</span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
               <span className="text-slate-700 font-medium">Delivered</span>
               <span className="text-2xl font-bold text-green-600">
-                {data.orderDetails.deliveredOrders}
-                <span className="text-sm ml-2">({formatPercentage(data.orderDetails.deliveryPercentage)})</span>
+                {reportData.orderDetails.deliveredOrders}
+                <span className="text-sm ml-2">({formatPercentage(reportData.orderDetails.deliveryPercentage)})</span>
               </span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-orange-50 rounded-lg">
               <span className="text-slate-700 font-medium">Courier Return</span>
               <span className="text-2xl font-bold text-orange-600">
-                {data.orderDetails.courierReturn}
-                <span className="text-sm ml-2">({formatPercentage(data.orderDetails.courierReturnPercentage)})</span>
+                {reportData.orderDetails.courierReturn}
+                <span className="text-sm ml-2">({formatPercentage(reportData.orderDetails.courierReturnPercentage)})</span>
               </span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-red-50 rounded-lg">
               <span className="text-slate-700 font-medium">Customer Return</span>
               <span className="text-2xl font-bold text-red-600">
-                {data.orderDetails.customerReturn}
-                <span className="text-sm ml-2">({formatPercentage(data.orderDetails.customerReturnPercentage)})</span>
+                {reportData.orderDetails.customerReturn}
+                <span className="text-sm ml-2">({formatPercentage(reportData.orderDetails.customerReturnPercentage)})</span>
               </span>
             </div>
           </div>
@@ -193,7 +183,7 @@ export default function DetailedProfitReport({ reportData }) {
       )}
 
       {/* Fulfillment Details */}
-      {data.fulfillmentDetails && (
+      {reportData.fulfillmentDetails && (
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <span className="text-purple-500">🚚</span>
@@ -201,25 +191,25 @@ export default function DetailedProfitReport({ reportData }) {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="flex justify-between items-center p-4 bg-blue-50 rounded-lg">
-              <span className="text-slate-700 font-medium">Easy Ship Order Count</span>
-              <span className="text-2xl font-bold text-blue-600">{data.fulfillmentDetails.easyShipOrderCount}</span>
+              <span className="text-slate-700 font-medium">Easy Ship Orders</span>
+              <span className="text-2xl font-bold text-blue-600">{reportData.fulfillmentDetails.easyShipOrderCount}</span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
-              <span className="text-slate-700 font-medium">FBA Order Count</span>
-              <span className="text-2xl font-bold text-purple-600">{data.fulfillmentDetails.fbaOrderCount}</span>
+              <span className="text-slate-700 font-medium">FBA Orders</span>
+              <span className="text-2xl font-bold text-purple-600">{reportData.fulfillmentDetails.fbaOrderCount}</span>
             </div>
             
             <div className="flex justify-between items-center p-4 bg-green-50 rounded-lg">
-              <span className="text-slate-700 font-medium">Self Ship Order Count</span>
-              <span className="text-2xl font-bold text-green-600">{data.fulfillmentDetails.selfShipOrderCount}</span>
+              <span className="text-slate-700 font-medium">Self Ship Orders</span>
+              <span className="text-2xl font-bold text-green-600">{reportData.fulfillmentDetails.selfShipOrderCount}</span>
             </div>
           </div>
         </div>
       )}
 
       {/* Returns Details */}
-      {data.returnsDetails && (
+      {reportData.returnsDetails && (
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
           <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
             <span className="text-red-500">↩️</span>
@@ -243,7 +233,7 @@ export default function DetailedProfitReport({ reportData }) {
       )}
 
       {/* Bank Transfers */}
-      {data.bankTransfers && data.bankTransfers.length > 0 && (
+      {reportData.bankTransfers && reportData.bankTransfers.length > 0 && (
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
           <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-slate-200">
             <h2 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -266,10 +256,10 @@ export default function DetailedProfitReport({ reportData }) {
                   <td className="px-6 py-4 font-bold text-slate-900">Total</td>
                   <td className="px-6 py-4"></td>
                   <td className="px-6 py-4 text-right text-2xl font-black text-green-600">
-                    {formatCurrency(data.bankTransfers.reduce((sum, t) => sum + (t.amount || 0), 0))}
+                    {formatCurrency(reportData.bankTransfers.reduce((sum, t) => sum + (t.amount || 0), 0))}
                   </td>
                 </tr>
-                {data.bankTransfers.map((transfer, index) => (
+                {reportData.bankTransfers.map((transfer, index) => (
                   <tr key={index} className="hover:bg-slate-50 transition-colors">
                     <td className="px-6 py-4 text-slate-700">{formatDate(transfer.date)}</td>
                     <td className="px-6 py-4 text-slate-700">{transfer.account}</td>
@@ -283,7 +273,7 @@ export default function DetailedProfitReport({ reportData }) {
       )}
 
       {/* SKU Wise Details */}
-      {data.skuWiseDetails && data.skuWiseDetails.length > 0 && (
+      {reportData.skuWiseDetails && reportData.skuWiseDetails.length > 0 ? (
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-slate-200">
           <div className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-slate-200 flex justify-between items-center">
             <div>
@@ -291,11 +281,17 @@ export default function DetailedProfitReport({ reportData }) {
                 <span className="text-indigo-500">📦</span>
                 SKU Wise Details
               </h2>
+              <p className="text-slate-600 text-sm mt-1">{reportData.skuWiseDetails.length} products analyzed</p>
             </div>
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-lg">
-              <span>📥</span>
-              Download SKU Wise Details
-            </button>
+            {downloadReport && (
+              <button 
+                onClick={downloadReport}
+                className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-lg"
+              >
+                <span>📥</span>
+                Download CSV
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -304,7 +300,7 @@ export default function DetailedProfitReport({ reportData }) {
                   <th className="px-4 py-3 text-left text-xs font-bold text-slate-700 uppercase">Product</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Units Sold</th>
                   <th className="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Return</th>
-                  <th className="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Successful Sale</th>
+                  <th className="px-4 py-3 text-center text-xs font-bold text-slate-700 uppercase">Successful</th>
                   <th className="px-4 py-3 text-right text-xs font-bold text-slate-700 uppercase">Cost Price</th>
                   <th className="px-4 py-3 text-right text-xs font-bold text-slate-700 uppercase">Settlement</th>
                   <th className="px-4 py-3 text-right text-xs font-bold text-slate-700 uppercase">Return Loss</th>
@@ -312,7 +308,7 @@ export default function DetailedProfitReport({ reportData }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {data.skuWiseDetails.map((sku, index) => {
+                {reportData.skuWiseDetails.map((sku, index) => {
                   const isProfit = (sku.totalProfit || 0) >= 0;
                   const rowBgClass = isProfit ? 'hover:bg-green-50/50' : 'hover:bg-red-50/50';
                   
@@ -320,7 +316,7 @@ export default function DetailedProfitReport({ reportData }) {
                     <tr key={index} className={`${rowBgClass} transition-colors`}>
                       <td className="px-4 py-4">
                         <div>
-                          <div className="font-bold text-slate-900">{sku.productName}</div>
+                          <div className="font-bold text-slate-900">{sku.productName || sku.sku}</div>
                           <div className="text-xs text-slate-500">{sku.sku}</div>
                         </div>
                       </td>
@@ -345,17 +341,32 @@ export default function DetailedProfitReport({ reportData }) {
             </table>
           </div>
         </div>
+      ) : (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6 text-center">
+          <p className="text-yellow-800 font-semibold">⚠️ No SKU-wise details available</p>
+          <p className="text-yellow-600 text-sm mt-2">Make sure you've uploaded both orders and payment files</p>
+        </div>
       )}
 
-      {/* Download Report Button */}
-      <div className="flex justify-center pt-6">
+      {/* Action Buttons */}
+      <div className="flex justify-center gap-4 pt-6 pb-12">
         <button
           onClick={() => window.print()}
           className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 shadow-xl flex items-center gap-3"
         >
           <span className="text-2xl">🖨️</span>
-          Print Full Report
+          Print Report
         </button>
+        
+        {onStartOver && (
+          <button
+            onClick={onStartOver}
+            className="bg-slate-600 hover:bg-slate-700 text-white px-10 py-4 rounded-xl font-bold text-lg transition-all transform hover:scale-105 shadow-xl flex items-center gap-3"
+          >
+            <span className="text-2xl">↺</span>
+            Start New Analysis
+          </button>
+        )}
       </div>
     </div>
   );
